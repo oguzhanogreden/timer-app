@@ -28,7 +28,7 @@ jobs:
         uses: elgohr/Publish-Docker-Github-Action@3.04
         with:
           name: oguzhanogreden2/timer-app-frontend
-          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          username: oguzhanogreden2
           password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
           workdir: timer-app
           dockerfile: Dockerfile
