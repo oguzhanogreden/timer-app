@@ -1,4 +1,28 @@
 <div id="container">
-  <strong>{{ name }}</strong>
-  <p>Explore <a target="_blank" rel="noopener noreferrer" href="https://ionicframework.com/docs/components">UI Components</a></p>
+  <ion-text *ngIf="time$ | async as time">
+    <h1>
+      {{ time }}
+    </h1>
+  </ion-text>
+
+  <ion-text *ngIf="timer$ | async as timer">
+    <h1>
+      {{ timer.toFormat("mm:ss") }}
+    </h1>
+  </ion-text>
+
+  <!-- goal -->
+  <form [formGroup]="form">
+    <ion-item>
+      <!-- TODO: Move unit to label -->
+      <ion-label>Goal</ion-label>
+      <ion-input
+        placeholder="e.g. 18 minutes"
+        type="number"
+        formControlName="goal"
+      ></ion-input>
+    </ion-item>
+  </form>
+
+  <ion-button (click)="startTimer()">Start timer</ion-button>
 </div>
