@@ -1,12 +1,13 @@
 import { Component, Input, OnInit } from '@angular/core';
 import { FormBuilder, Validators } from '@angular/forms';
 import { DateTime, Duration } from 'luxon';
-import { interval, Subject } from 'rxjs';
+import { combineLatest, interval, Subject } from 'rxjs';
 import {
   distinctUntilChanged,
   filter,
   map,
   scan,
+  startWith,
   switchMap,
   take,
 } from 'rxjs/operators';
@@ -14,6 +15,8 @@ import {
 type FormValue = {
   goal: number;
 };
+
+const defaultGoal = 18;
 
 @Component({
   selector: 'app-explore-container',
@@ -41,9 +44,22 @@ export class ExploreContainerComponent implements OnInit {
   );
 
   form = this.formBuilder.group({
-    goal: this.formBuilder.control(18, [Validators.required]),
+    goal: this.formBuilder.control(defaultGoal, [Validators.required]),
   });
-  formValue$ = this.onFormValueChange();
+  goal$ = this.onFormValueChange();
+
+  goalReached$ = combineLatest([
+    this.timer$,
+    this.goal$.pipe(startWith(Duration.fromObject({ minute: defaultGoal }))),
+  ])
+    .pipe(
+      filter(([timer, goal]) => timer > goal),
+      take(1)
+    )
+    .subscribe({
+      next: console.log,
+    });
+
   constructor(private formBuilder: FormBuilder) {}
 
   ngOnInit() {
@@ -52,23 +68,11 @@ export class ExploreContainerComponent implements OnInit {
     this.onStartTimer();
   }
 
-  submitGoalForm() {
-    this.timer$
-      .pipe(
-        filter(
-          (t) =>
-            t >
-            Duration.fromObject({ minutes: (<FormValue>this.form.value).goal })
-        ),
-        take(2)
-      )
-      .subscribe({
-        next: console.log,
-      });
-  }
-
   private onFormValueChange() {
-    return this.form.valueChanges.pipe(distinctUntilChanged());
+    return this.form.valueChanges.pipe(
+      distinctUntilChanged(),
+      map((v: FormValue) => Duration.fromObject({ minute: v.goal }))
+    );
   }
 
   private onStartTimer() {
