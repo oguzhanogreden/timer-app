@@ -1,5 +1,6 @@
 import { Component, Input, OnInit } from '@angular/core';
 import { FormBuilder, Validators } from '@angular/forms';
+import { ToastController } from '@ionic/angular';
 import { DateTime, Duration } from 'luxon';
 import { combineLatest, interval, Subject } from 'rxjs';
 import {
@@ -27,6 +28,7 @@ export class ExploreContainerComponent implements OnInit {
   @Input() name: string;
 
   private _startTimerClick = new Subject();
+  private _stopTimerClick = new Subject();
 
   private _time = new Subject<DateTime>();
   time$ = this._time.pipe(map((t) => t.toFormat('HH:mm', { locale: 'nl-NL' })));
@@ -37,7 +39,7 @@ export class ExploreContainerComponent implements OnInit {
     scan(
       (acc, _) =>
         acc >= Duration.fromObject({ minutes: 15 })
-          ? acc.plus(TIMER_TICK * 60)
+          ? acc.plus(TIMER_TICK * 60) // Speed up for development
           : acc.plus(TIMER_TICK * 60 * 5),
       Duration.fromMillis(0)
     )
@@ -57,15 +59,31 @@ export class ExploreContainerComponent implements OnInit {
       take(1)
     )
     .subscribe({
-      next: console.log,
+      next: () => this.displayToast(),
     });
 
-  constructor(private formBuilder: FormBuilder) {}
+  constructor(
+    private formBuilder: FormBuilder,
+    private toastController: ToastController
+  ) {}
 
   ngOnInit() {
     interval(100).subscribe((_) => this._time.next(DateTime.now()));
 
     this.onStartTimer();
+  }
+
+  private async displayToast() {
+    const toast = await this.toastController.create({
+      message: "You've reached your goal, take a break?",
+      buttons: [
+        {
+          text: '',
+        },
+      ],
+    });
+
+    await toast.present();
   }
 
   private onFormValueChange() {
@@ -83,6 +101,9 @@ export class ExploreContainerComponent implements OnInit {
 
   startTimer() {
     this._startTimerClick.next();
+  }
+  stopTimer() {
+    this._stopTimerClick.next();
   }
 }
 
