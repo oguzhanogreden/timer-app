@@ -5,12 +5,6 @@
     </h1>
   </ion-text>
 
-  <ion-text *ngIf="timer$ | async as timer">
-    <h1>
-      {{ timer.toFormat("mm:ss") }}
-    </h1>
-  </ion-text>
-
   <!-- goal -->
   <form [formGroup]="form">
     <ion-item>
@@ -25,5 +19,11 @@
   </form>
 
   <ion-button (click)="startTimer()" *ngIf="true"> Start timer </ion-button>
-  <ion-button (click)="stopTimer()" *ngIf="true"> Stop timer </ion-button>
+
+  <!-- TODO: Style -->
+  <div *ngIf="timers$ | async as timers">
+    <div *ngFor="let timer of timers">
+      <app-timer [timer]="timer"></app-timer>
+    </div>
+  </div>
 </div>

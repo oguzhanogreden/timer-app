@@ -2,7 +2,7 @@ import { Component, Input, OnInit } from '@angular/core';
 import { FormBuilder, Validators } from '@angular/forms';
 import { ToastController } from '@ionic/angular';
 import { DateTime, Duration } from 'luxon';
-import { combineLatest, interval, Subject } from 'rxjs';
+import { combineLatest, interval, of, Subject } from 'rxjs';
 import {
   distinctUntilChanged,
   filter,
@@ -12,6 +12,8 @@ import {
   switchMap,
   take,
 } from 'rxjs/operators';
+import { TimerService } from '../services/timer.service';
+import { Timer } from './timer/timer.model';
 
 type FormValue = {
   goal: number;
@@ -33,15 +35,22 @@ export class ExploreContainerComponent implements OnInit {
   private _time = new Subject<DateTime>();
   time$ = this._time.pipe(map((t) => t.toFormat('HH:mm', { locale: 'nl-NL' })));
 
-  private _timerTicks = new Subject();
+  _active = new Subject<boolean>();
 
-  timer$ = this._timerTicks.pipe(
-    scan(
-      (acc, _) =>
-        acc >= Duration.fromObject({ minutes: 15 })
-          ? acc.plus(TIMER_TICK * 60) // Speed up for development
-          : acc.plus(TIMER_TICK * 60 * 5),
-      Duration.fromMillis(0)
+  private _timerTicks = new Subject();
+  timer$ = this._active.pipe(
+    switchMap((active) =>
+      active
+        ? this._timerTicks.pipe(
+            scan(
+              (acc, _) =>
+                acc >= Duration.fromObject({ minutes: 15 })
+                  ? acc.plus(TIMER_TICK * 60) // Speed up for development
+                  : acc.plus(TIMER_TICK * 60 * 5),
+              Duration.fromMillis(0)
+            )
+          )
+        : of(Duration.fromMillis(0))
     )
   );
 
@@ -64,13 +73,28 @@ export class ExploreContainerComponent implements OnInit {
 
   constructor(
     private formBuilder: FormBuilder,
-    private toastController: ToastController
+    private toastController: ToastController,
+    private timerService: TimerService
   ) {}
 
   ngOnInit() {
     interval(100).subscribe((_) => this._time.next(DateTime.now()));
 
     this.onStartTimer();
+    this.onStopTimer();
+  }
+
+  private onStopTimer() {
+    this._stopTimerClick.subscribe({
+      next: (_) => {
+        // this._timerTicks.complete();
+        // this._timerTicks = new Subject();
+        // this.timer$ = this.initializeTimer();
+        // this.goalReached$ = this.initializeGoalReached();
+      },
+    });
+    // this._timerTicks.complete();
+    // this.÷
   }
 
   private async displayToast() {
@@ -94,15 +118,19 @@ export class ExploreContainerComponent implements OnInit {
   }
 
   private onStartTimer() {
-    this._startTimerClick
-      .pipe(switchMap((_) => createTimer()))
-      .subscribe((_) => this._timerTicks.next());
+    this._startTimerClick.subscribe((_) => this.timerService.startTimer());
   }
 
+  timers$ = this.timerService.timers$.pipe(
+    scan((timers, t) => [...timers, t], [] as Array<Timer>)
+  );
+
   startTimer() {
+    this._active.next(true);
     this._startTimerClick.next();
   }
   stopTimer() {
+    this._active.next(false);
     this._stopTimerClick.next();
   }
 }
