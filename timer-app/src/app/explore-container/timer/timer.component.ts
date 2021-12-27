@@ -2,11 +2,15 @@ import {
   AfterViewInit,
   ChangeDetectorRef,
   Component,
+  EventEmitter,
   Input,
   OnInit,
+  Output,
+  Pipe,
+  PipeTransform,
 } from '@angular/core';
 import { Duration } from 'luxon';
-import { map, tap } from 'rxjs/operators';
+import { first, tap } from 'rxjs/operators';
 import { Timer } from './timer.model';
 
 @Component({
@@ -18,18 +22,29 @@ export class TimerComponent implements OnInit, AfterViewInit {
   @Input()
   timer: Timer;
 
-  timerView: Duration | null = null;
+  @Output()
+  reminder = new EventEmitter<null>();
 
   constructor(private cdr: ChangeDetectorRef) {}
 
   ngOnInit() {
-    this.timer.timer$
+    this.timer.reminder$
       .pipe(
-        map((t) => Duration.fromObject({ seconds: t })),
-        tap((t) => (this.timerView = t))
+        first(),
+        tap((_) => this.reminder.emit())
       )
-      .subscribe();
+      .subscribe({
+        next: console.log,
+        error: console.error,
+      });
   }
 
   ngAfterViewInit(): void {}
+}
+
+@Pipe({ name: 'durationFromSeconds', pure: true })
+export class DurationFromSecondsPipe implements PipeTransform {
+  transform(value: number, ...args: any[]) {
+    return Duration.fromObject({ seconds: value });
+  }
 }

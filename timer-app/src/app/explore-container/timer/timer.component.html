@@ -1,7 +1,7 @@
-<ion-text *ngIf="timerView">
+<ion-text *ngIf="timer.timer$ | async | durationFromSeconds as duration">
   <h1>
-    {{ timerView.toFormat("mm:ss") }}
-  </h1>
-</ion-text>
+    {{ duration.toFormat("mm:ss") }}
+  </h1></ion-text
+>
 
 <!-- TODO: Add stop button -->
