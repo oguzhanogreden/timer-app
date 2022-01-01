@@ -1,7 +1,15 @@
-<ion-text *ngIf="timer.timer$ | async | durationFromSeconds as duration">
+<ion-text *ngIf="timer.timer$ | async | durationFromMilliseconds as duration">
   <h1>
     {{ duration.toFormat("mm:ss") }}
-  </h1></ion-text
->
+  </h1>
+</ion-text>
 
-<!-- TODO: Add stop button -->
+<button
+  *ngIf="timer.state$ | async as timerState" 
+>
+  <ion-icon
+    (click)="onToggleButtonClick(timerState)"
+    [name]="timerState === 'ticking' ? 'pause-circle-outline' : 'play-circle-outline'"
+    size="large"
+  ></ion-icon>
+</button>

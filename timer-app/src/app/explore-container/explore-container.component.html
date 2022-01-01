@@ -5,19 +5,6 @@
     </h1>
   </ion-text>
 
-  <!-- goal -->
-  <form [formGroup]="form">
-    <ion-item>
-      <!-- TODO: Move unit of the input to label -->
-      <ion-label>Goal</ion-label>
-      <ion-input
-        placeholder="e.g. 18 minutes"
-        type="number"
-        formControlName="goal"
-      ></ion-input>
-    </ion-item>
-  </form>
-
   <ion-button (click)="startTimer()" *ngIf="true"> Start timer </ion-button>
 
   <!-- TODO: Style -->

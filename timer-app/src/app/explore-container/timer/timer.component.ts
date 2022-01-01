@@ -7,11 +7,11 @@ import {
   OnInit,
   Output,
   Pipe,
-  PipeTransform,
+  PipeTransform
 } from '@angular/core';
 import { Duration } from 'luxon';
 import { first, tap } from 'rxjs/operators';
-import { Timer } from './timer.model';
+import { Timer, TimerState } from './timer.model';
 
 @Component({
   selector: 'app-timer',
@@ -40,11 +40,22 @@ export class TimerComponent implements OnInit, AfterViewInit {
   }
 
   ngAfterViewInit(): void {}
+
+  onToggleButtonClick(timerState: TimerState) {
+    switch (timerState) {
+      case "ticking": 
+        this.timer.stopTimer();
+        break;
+      case "paused":
+        this.timer.startTimer();
+        break;
+    }
+  }
 }
 
-@Pipe({ name: 'durationFromSeconds', pure: true })
+@Pipe({ name: 'durationFromMilliseconds', pure: true })
 export class DurationFromSecondsPipe implements PipeTransform {
   transform(value: number, ...args: any[]) {
-    return Duration.fromObject({ seconds: value });
+    return Duration.fromMillis(value);
   }
 }
