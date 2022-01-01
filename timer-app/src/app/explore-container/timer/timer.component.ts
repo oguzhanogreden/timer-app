@@ -10,7 +10,7 @@ import {
   PipeTransform
 } from '@angular/core';
 import { Duration } from 'luxon';
-import { first, tap } from 'rxjs/operators';
+import { tap } from 'rxjs/operators';
 import { Timer, TimerState } from './timer.model';
 
 @Component({
@@ -28,13 +28,12 @@ export class TimerComponent implements OnInit, AfterViewInit {
   constructor(private cdr: ChangeDetectorRef) {}
 
   ngOnInit() {
-    this.timer.reminder$
+    this.timer.reminderSeverity$
       .pipe(
-        first(),
         tap((_) => this.reminder.emit())
       )
       .subscribe({
-        next: console.log,
+        next: x => console.log(x),
         error: console.error,
       });
   }

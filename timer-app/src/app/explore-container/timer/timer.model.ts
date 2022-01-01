@@ -1,21 +1,19 @@
 import { merge, NEVER, of, Subject, timer } from 'rxjs';
 import {
-  filter,
-  map,
+  distinctUntilChanged, filter, map,
   scan,
   shareReplay,
   skip,
-  switchMap,
-  take,
-  tap
+  switchMap, tap
 } from 'rxjs/operators';
 
 type TimerCommand = 'start' | 'stop';
 export type TimerState = "ticking" | "paused";
 
 export class Timer {
+  // TODO: Implement configuration
   private _timerTick = of(1000);
-  private _reminderAt = of(1000 * 60 * 18);
+  private _reminderAt = of(1000 * 60 * 18); 
 
   private _timerStarted = new Subject();
   private _timerStopped = new Subject();
@@ -52,22 +50,21 @@ export class Timer {
     shareReplay(1)
   );
 
-  reminder$ = this._timerStarted.pipe(
+  reminderSeverity$ = this._timerStarted.pipe(
     switchMap((_) => this._reminderAt),
     switchMap((reminderAt) =>
       this.timer$.pipe(
-        filter((t) => reminderAt < t),
-        take(1)
-        // TODO: Make reminder recurring every `_reminderAt` minutes.
+        map((t) => Math.floor(t / ( reminderAt))),
+        filter(severity => severity > 0),
+        distinctUntilChanged(),
       )
     ),
-    map((_) => null),
     shareReplay()
   );
 
   constructor() {
     this.timer$.subscribe();
-    this.reminder$.subscribe();
+    this.reminderSeverity$.subscribe();
     this._commands.subscribe();
     this.state$.subscribe();
   }
