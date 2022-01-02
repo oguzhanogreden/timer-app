@@ -1,19 +1,24 @@
-import { merge, NEVER, of, Subject, timer } from 'rxjs';
+import { merge, NEVER, of, ReplaySubject, Subject, timer } from 'rxjs';
 import {
-  distinctUntilChanged, filter, map,
+  distinctUntilChanged,
+  filter,
+  map,
   scan,
   shareReplay,
   skip,
-  switchMap, tap
+  switchMap,
+  tap,
 } from 'rxjs/operators';
 
 type TimerCommand = 'start' | 'stop';
-export type TimerState = "ticking" | "paused";
+export type TimerState = 'ticking' | 'paused';
 
 export class Timer {
   // TODO: Implement configuration
   private _timerTick = of(1000);
-  private _reminderAt = of(1000 * 60 * 18); 
+  private _reminderAt = of(3000); //* 60 * 18);
+  private _name = new ReplaySubject<string>(1);
+  name$ = this._name.pipe();
 
   private _timerStarted = new Subject();
   private _timerStopped = new Subject();
@@ -22,15 +27,15 @@ export class Timer {
     this._timerStarted.pipe(map((_) => 'start' as TimerCommand)),
     this._timerStopped.pipe(map((_) => 'stop' as TimerCommand))
   ).pipe(shareReplay());
-  
+
   _state = new Subject<TimerState>();
   state$ = this._state.pipe(shareReplay(1));
-  
+
   timer$ = this._commands.pipe(
     switchMap((command) => {
       if (command === 'start') {
         return this._timerTick.pipe(
-          tap(_ => this._state.next("ticking")),
+          tap((_) => this._state.next('ticking')),
           switchMap((tick) =>
             timer(0, tick).pipe(
               skip(1),
@@ -39,11 +44,10 @@ export class Timer {
           )
         );
       } else {
-        return of("paused" as TimerState)
-          .pipe(
-            tap(state => this._state.next(state)),
-            switchMap(_ => NEVER),
-          )
+        return of('paused' as TimerState).pipe(
+          tap((state) => this._state.next(state)),
+          switchMap((_) => NEVER)
+        );
       }
     }),
     scan((passed, tick) => passed + tick, 0),
@@ -54,15 +58,17 @@ export class Timer {
     switchMap((_) => this._reminderAt),
     switchMap((reminderAt) =>
       this.timer$.pipe(
-        map((t) => Math.floor(t / ( reminderAt))),
-        filter(severity => severity > 0),
-        distinctUntilChanged(),
+        map((t) => Math.floor(t / reminderAt)),
+        filter((severity) => severity > 0),
+        distinctUntilChanged()
       )
     ),
     shareReplay()
   );
 
-  constructor() {
+  constructor(timerName?: string) {
+    this._name.next(timerName ?? 'New timer');
+
     this.timer$.subscribe();
     this.reminderSeverity$.subscribe();
     this._commands.subscribe();
