@@ -1,5 +1,4 @@
 import { Component } from '@angular/core';
-import { filter } from 'rxjs/operators';
 import { NotificationService } from './services/notification.service';
 
 @Component({
@@ -10,8 +9,8 @@ import { NotificationService } from './services/notification.service';
 export class AppComponent {
   constructor(private notification: NotificationService) {
     // TODO: Warn user if notifications are not allowed?
-    this.notification.allowed$
-      .pipe(filter((allowed) => !allowed))
-      .subscribe(console.log);
+    // this.notification.allowed$
+    //   .pipe(filter((allowed) => !allowed))
+    //   .subscribe((x) => console.log(x));
   }
 }
