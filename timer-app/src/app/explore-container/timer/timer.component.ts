@@ -2,12 +2,16 @@ import {
   AfterViewInit,
   ChangeDetectorRef,
   Component,
+  EventEmitter,
   Input,
   OnInit,
+  Output,
+  Pipe,
+  PipeTransform
 } from '@angular/core';
 import { Duration } from 'luxon';
-import { map, tap } from 'rxjs/operators';
-import { Timer } from './timer.model';
+import { tap } from 'rxjs/operators';
+import { Timer, TimerState } from './timer.model';
 
 @Component({
   selector: 'app-timer',
@@ -18,18 +22,39 @@ export class TimerComponent implements OnInit, AfterViewInit {
   @Input()
   timer: Timer;
 
-  timerView: Duration | null = null;
+  @Output()
+  reminder = new EventEmitter<null>();
 
   constructor(private cdr: ChangeDetectorRef) {}
 
   ngOnInit() {
-    this.timer.timer$
+    this.timer.reminderSeverity$
       .pipe(
-        map((t) => Duration.fromObject({ seconds: t })),
-        tap((t) => (this.timerView = t))
+        tap((_) => this.reminder.emit())
       )
-      .subscribe();
+      .subscribe({
+        next: x => console.log(x),
+        error: console.error,
+      });
   }
 
   ngAfterViewInit(): void {}
+
+  onToggleButtonClick(timerState: TimerState) {
+    switch (timerState) {
+      case "ticking": 
+        this.timer.stopTimer();
+        break;
+      case "paused":
+        this.timer.startTimer();
+        break;
+    }
+  }
+}
+
+@Pipe({ name: 'durationFromMilliseconds', pure: true })
+export class DurationFromSecondsPipe implements PipeTransform {
+  transform(value: number, ...args: any[]) {
+    return Duration.fromMillis(value);
+  }
 }

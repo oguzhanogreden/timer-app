@@ -1,4 +1,5 @@
 import { Component } from '@angular/core';
+import { NotificationService } from './services/notification.service';
 
 @Component({
   selector: 'app-root',
@@ -6,5 +7,10 @@ import { Component } from '@angular/core';
   styleUrls: ['app.component.scss'],
 })
 export class AppComponent {
-  constructor() {}
+  constructor(private notification: NotificationService) {
+    // TODO: Warn user if notifications are not allowed?
+    // this.notification.allowed$
+    //   .pipe(filter((allowed) => !allowed))
+    //   .subscribe((x) => console.log(x));
+  }
 }
