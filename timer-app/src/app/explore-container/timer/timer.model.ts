@@ -6,7 +6,7 @@ import {
   of,
   ReplaySubject,
   Subject,
-  timer
+  timer,
 } from 'rxjs';
 import {
   distinctUntilChanged,
@@ -17,7 +17,7 @@ import {
   skip,
   startWith,
   switchMap,
-  tap
+  tap,
 } from 'rxjs/operators';
 
 type TimerCommand = 'start' | 'stop';
@@ -69,7 +69,8 @@ export class Timer {
           switchMap((tick) =>
             timer(0, tick).pipe(
               skip(1),
-              map((_) => tick)
+              map((_) => tick),
+              startWith(0)
             )
           )
         );
@@ -80,18 +81,19 @@ export class Timer {
         );
       }
     }),
-    scan((passed, tick) => passed + tick, 0),
+    scan((passedMillis, tick) => passedMillis + tick, 0),
+    map((passedMillis) => Duration.fromMillis(passedMillis)),
     shareReplay(1)
   );
 
   // TODO: Prevent resetting at every reminderAt
-  reminderSeverity$ = this._timerStarted.pipe(
+  reminder$ = this._timerStarted.pipe(
     switchMap((_) => this.config$),
     tap((_) => console.log(_)),
-    map((_) => _.remindEveryMinutes),
+    map((config) => config.remindEveryMinutes),
     switchMap((reminderAt) =>
       this.timer$.pipe(
-        map((t) => Math.floor(t / reminderAt.toMillis())),
+        map((t) => Math.floor(t.toMillis() / reminderAt.toMillis())),
         filter((severity) => severity > 0),
         distinctUntilChanged()
       )
@@ -108,7 +110,7 @@ export class Timer {
     this._name.next(timerName ?? 'New timer');
 
     this.timer$.subscribe();
-    this.reminderSeverity$.subscribe();
+    this.reminder$.subscribe();
     this._commands.subscribe();
     this.state$.subscribe();
   }

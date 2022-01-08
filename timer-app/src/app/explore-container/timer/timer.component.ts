@@ -58,12 +58,10 @@ export class TimerComponent implements OnInit, AfterViewInit {
           this.timer.setRemindEveryMinutes(remindEveryMinutes),
       });
 
-    this.timer.reminderSeverity$
-      .pipe(tap((_) => this.reminder.emit()))
-      .subscribe({
-        next: (x) => console.log(x),
-        error: console.error,
-      });
+    this.timer.reminder$.pipe(tap((_) => this.reminder.emit())).subscribe({
+      next: (x) => console.log(x),
+      error: console.error,
+    });
   }
 
   ngAfterViewInit(): void {}

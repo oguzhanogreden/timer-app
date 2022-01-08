@@ -2,9 +2,7 @@
   <ion-card-header>{{ timer.name$ | async }}</ion-card-header>
 
   <ion-card-content>
-    <ion-text
-      *ngIf="timer.timer$ | async | durationFromMilliseconds as duration"
-    >
+    <ion-text *ngIf="timer.timer$ | async as duration">
       <h1>
         {{ duration.toFormat("mm:ss") }}
       </h1>
