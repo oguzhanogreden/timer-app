@@ -1,15 +1,28 @@
-<ion-text *ngIf="timer.timer$ | async | durationFromMilliseconds as duration">
-  <h1>
-    {{ duration.toFormat("mm:ss") }}
-  </h1>
-</ion-text>
+<ion-card>
+  <ion-card-header>{{ timer.name$ | async }}</ion-card-header>
 
-<button
-  *ngIf="timer.state$ | async as timerState" 
->
-  <ion-icon
-    (click)="onToggleButtonClick(timerState)"
-    [name]="timerState === 'ticking' ? 'pause-circle-outline' : 'play-circle-outline'"
-    size="large"
-  ></ion-icon>
-</button>
+  <ion-card-content>
+    <ion-text
+      *ngIf="timer.timer$ | async | durationFromMilliseconds as duration"
+    >
+      <h1>
+        {{ duration.toFormat("mm:ss") }}
+      </h1>
+    </ion-text>
+    <button *ngIf="timer.state$ | async as timerState">
+      <ion-icon
+        (click)="onToggleButtonClick(timerState)"
+        [name]="
+          timerState === 'ticking'
+            ? 'pause-circle-outline'
+            : 'play-circle-outline'
+        "
+        size="large"
+      ></ion-icon>
+    </button>
+
+    <div [formGroup]="form">
+      <ion-input formControlName="remindEveryMinutes" type="number"></ion-input>
+    </div>
+  </ion-card-content>
+</ion-card>

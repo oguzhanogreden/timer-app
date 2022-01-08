@@ -1,4 +1,12 @@
-import { merge, NEVER, of, ReplaySubject, Subject, timer } from 'rxjs';
+import {
+  combineLatest,
+  merge,
+  NEVER,
+  of,
+  ReplaySubject,
+  Subject,
+  timer,
+} from 'rxjs';
 import {
   distinctUntilChanged,
   filter,
@@ -6,19 +14,37 @@ import {
   scan,
   shareReplay,
   skip,
+  startWith,
   switchMap,
-  tap
+  tap,
 } from 'rxjs/operators';
 
 type TimerCommand = 'start' | 'stop';
 export type TimerState = 'ticking' | 'paused';
 
+type TimerConfiguration = {
+  // tickEveryMilliseconds: number,
+  remindEveryMinutes: number;
+  // name: string
+};
+
 export class Timer {
-  // TODO: Implement configuration
   private _timerTick = of(1000);
-  private _reminderAt = of(3000); //* 60 * 18);
+  private _reminderAt = new Subject<number>();
   private _name = new ReplaySubject<string>(1);
   name$ = this._name.pipe();
+
+  config$ = combineLatest([this._reminderAt.pipe(startWith(1000 * 10))]).pipe(
+    // TODO Update constant
+    map(
+      ([remindEveryMinutes]) =>
+        ({
+          remindEveryMinutes,
+        } as TimerConfiguration)
+    ),
+    distinctUntilChanged(),
+    shareReplay(1)
+  );
 
   private _timerStarted = new Subject();
   private _timerStopped = new Subject();
@@ -54,8 +80,11 @@ export class Timer {
     shareReplay(1)
   );
 
+  // TODO: Prevent resetting at every reminderAt
   reminderSeverity$ = this._timerStarted.pipe(
-    switchMap((_) => this._reminderAt),
+    switchMap((_) => this.config$),
+    tap((_) => console.log(_)),
+    map((_) => _.remindEveryMinutes),
     switchMap((reminderAt) =>
       this.timer$.pipe(
         map((t) => Math.floor(t / reminderAt)),
@@ -63,8 +92,13 @@ export class Timer {
         distinctUntilChanged()
       )
     ),
+    // TODO: Throttle?
     shareReplay()
   );
+
+  setRemindEveryMinutes(m: number) {
+    this._reminderAt.next(m);
+  }
 
   constructor(timerName?: string) {
     this._name.next(timerName ?? 'New timer');
