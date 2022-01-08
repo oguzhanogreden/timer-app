@@ -6,7 +6,7 @@ import {
   of,
   ReplaySubject,
   Subject,
-  timer,
+  timer
 } from 'rxjs';
 import {
   distinctUntilChanged,
@@ -17,7 +17,7 @@ import {
   skip,
   startWith,
   switchMap,
-  tap,
+  tap
 } from 'rxjs/operators';
 
 type TimerCommand = 'start' | 'stop';
@@ -32,7 +32,7 @@ type TimerConfiguration = {
 const DEFAULT_REMINDER = Duration.fromObject({ minutes: 18 });
 
 export class Timer {
-  private _timerTick = of(1000);
+  private _timerPrecision = of(1000);
   private _reminderAt = new Subject<Duration>();
   private _name = new ReplaySubject<string>(1);
   name$ = this._name.pipe();
@@ -64,7 +64,7 @@ export class Timer {
   timer$ = this._commands.pipe(
     switchMap((command) => {
       if (command === 'start') {
-        return this._timerTick.pipe(
+        return this._timerPrecision.pipe(
           tap((_) => this._state.next('ticking')),
           switchMap((tick) =>
             timer(0, tick).pipe(
