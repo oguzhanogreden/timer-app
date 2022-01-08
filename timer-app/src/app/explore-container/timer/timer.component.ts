@@ -40,7 +40,7 @@ export class TimerComponent implements OnInit, AfterViewInit {
 
     this.timer.config$
       .pipe(
-        map((config) => config.remindEveryMinutes),
+        map((config) => config.remindEveryMinutes.toMillis() / (1000 * 60)),
         take(1)
       )
       .subscribe((remindEveryMinutes) =>

@@ -1,3 +1,4 @@
+import { Duration } from 'luxon';
 import {
   combineLatest,
   merge,
@@ -24,18 +25,21 @@ export type TimerState = 'ticking' | 'paused';
 
 type TimerConfiguration = {
   // tickEveryMilliseconds: number,
-  remindEveryMinutes: number;
+  remindEveryMinutes: Duration;
   // name: string
 };
 
+const DEFAULT_REMINDER = Duration.fromObject({ minutes: 18 });
+
 export class Timer {
   private _timerTick = of(1000);
-  private _reminderAt = new Subject<number>();
+  private _reminderAt = new Subject<Duration>();
   private _name = new ReplaySubject<string>(1);
   name$ = this._name.pipe();
 
-  config$ = combineLatest([this._reminderAt.pipe(startWith(1000 * 10))]).pipe(
-    // TODO Update constant
+  config$ = combineLatest([
+    this._reminderAt.pipe(startWith(DEFAULT_REMINDER)),
+  ]).pipe(
     map(
       ([remindEveryMinutes]) =>
         ({
@@ -87,7 +91,7 @@ export class Timer {
     map((_) => _.remindEveryMinutes),
     switchMap((reminderAt) =>
       this.timer$.pipe(
-        map((t) => Math.floor(t / reminderAt)),
+        map((t) => Math.floor(t / reminderAt.toMillis())),
         filter((severity) => severity > 0),
         distinctUntilChanged()
       )
@@ -97,7 +101,7 @@ export class Timer {
   );
 
   setRemindEveryMinutes(m: number) {
-    this._reminderAt.next(m);
+    this._reminderAt.next(Duration.fromObject({ minutes: m }));
   }
 
   constructor(timerName?: string) {
