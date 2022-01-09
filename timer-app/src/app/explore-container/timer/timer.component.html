@@ -1,4 +1,4 @@
-<ion-card>
+<ion-card [formGroup]="form">
   <ion-card-header>{{ timer.name$ | async }}</ion-card-header>
 
   <ion-card-content>
@@ -20,7 +20,7 @@
     </button>
     
     <ion-item>
-      <ion-label >
+      <ion-label>
         Remind every nth (mins)
       </ion-label>
       <ion-input formControlName="remindEveryMinutes" type="number" size=1></ion-input>
