@@ -1,4 +1,13 @@
-import { merge, NEVER, of, ReplaySubject, Subject, timer } from 'rxjs';
+import { Duration } from 'luxon';
+import {
+  combineLatest,
+  merge,
+  NEVER,
+  of,
+  ReplaySubject,
+  Subject,
+  timer
+} from 'rxjs';
 import {
   distinctUntilChanged,
   filter,
@@ -6,6 +15,7 @@ import {
   scan,
   shareReplay,
   skip,
+  startWith,
   switchMap,
   tap
 } from 'rxjs/operators';
@@ -13,12 +23,32 @@ import {
 type TimerCommand = 'start' | 'stop';
 export type TimerState = 'ticking' | 'paused';
 
+type TimerConfiguration = {
+  // tickEveryMilliseconds: number,
+  remindEveryMinutes: Duration;
+  // name: string
+};
+
+const DEFAULT_REMINDER = Duration.fromObject({ minutes: 5 });
+
 export class Timer {
-  // TODO: Implement configuration
-  private _timerTick = of(1000);
-  private _reminderAt = of(3000); //* 60 * 18);
+  private _timerPrecision = of(1000);
+  private _reminderAt = new Subject<Duration>();
   private _name = new ReplaySubject<string>(1);
   name$ = this._name.pipe();
+
+  config$ = combineLatest([
+    this._reminderAt.pipe(startWith(DEFAULT_REMINDER)),
+  ]).pipe(
+    map(
+      ([remindEveryMinutes]) =>
+        ({
+          remindEveryMinutes,
+        } as TimerConfiguration)
+    ),
+    distinctUntilChanged(),
+    shareReplay(1)
+  );
 
   private _timerStarted = new Subject();
   private _timerStopped = new Subject();
@@ -34,12 +64,13 @@ export class Timer {
   timer$ = this._commands.pipe(
     switchMap((command) => {
       if (command === 'start') {
-        return this._timerTick.pipe(
+        return this._timerPrecision.pipe(
           tap((_) => this._state.next('ticking')),
           switchMap((tick) =>
             timer(0, tick).pipe(
               skip(1),
-              map((_) => tick)
+              map((_) => tick),
+              startWith(0)
             )
           )
         );
@@ -50,27 +81,38 @@ export class Timer {
         );
       }
     }),
-    scan((passed, tick) => passed + tick, 0),
+    scan((passedMillis, tick) => passedMillis + tick, 0),
+    map((passedMillis) => Duration.fromMillis(passedMillis)),
     shareReplay(1)
   );
 
-  reminderSeverity$ = this._timerStarted.pipe(
-    switchMap((_) => this._reminderAt),
-    switchMap((reminderAt) =>
-      this.timer$.pipe(
-        map((t) => Math.floor(t / reminderAt)),
-        filter((severity) => severity > 0),
-        distinctUntilChanged()
-      )
-    ),
+  reminder$ = this._timerStarted.pipe(
+    switchMap((_) => this.config$),
+    map((config) => config.remindEveryMinutes),
+    switchMap((reminderAt, reminderIndex) => {
+      return this.timer$.pipe(
+        map((t) => Math.floor(t.toMillis() / reminderAt.toMillis())),
+        // If "reminder" changed, let the first value pass so that distinctUntilChanged will not filter `1`
+        filter((severity) => (reminderIndex === 0 ? severity > 0 : true)),
+        distinctUntilChanged(),
+        // If "reminder" changed, _ will be 0 when timerIndex===0, we'd like to pass:
+        filter((_, timerIndex) => {
+          return reminderIndex === 0 || (reminderIndex > 0 && timerIndex !== 0);
+        })
+      );
+    }),
     shareReplay()
   );
+
+  setRemindEveryMinutes(m: number) {
+    this._reminderAt.next(Duration.fromObject({ minutes: m }));
+  }
 
   constructor(timerName?: string) {
     this._name.next(timerName ?? 'New timer');
 
     this.timer$.subscribe();
-    this.reminderSeverity$.subscribe();
+    this.reminder$.subscribe();
     this._commands.subscribe();
     this.state$.subscribe();
   }
