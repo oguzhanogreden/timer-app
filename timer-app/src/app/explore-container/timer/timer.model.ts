@@ -29,7 +29,7 @@ type TimerConfiguration = {
   // name: string
 };
 
-const DEFAULT_REMINDER = Duration.fromObject({ minutes: 18 });
+const DEFAULT_REMINDER = Duration.fromObject({ minutes: 5 });
 
 export class Timer {
   private _timerPrecision = of(1000);
@@ -81,24 +81,26 @@ export class Timer {
         );
       }
     }),
-    scan((passedMillis, tick) => passedMillis + tick, 0),
+    scan((passedMillis, tick) => passedMillis + tick * 60, 0),
     map((passedMillis) => Duration.fromMillis(passedMillis)),
     shareReplay(1)
   );
 
-  // TODO: Prevent resetting at every reminderAt
   reminder$ = this._timerStarted.pipe(
     switchMap((_) => this.config$),
-    tap((_) => console.log(_)),
     map((config) => config.remindEveryMinutes),
-    switchMap((reminderAt) =>
-      this.timer$.pipe(
+    switchMap((reminderAt, reminderIndex) => {
+      return this.timer$.pipe(
         map((t) => Math.floor(t.toMillis() / reminderAt.toMillis())),
-        filter((severity) => severity > 0),
-        distinctUntilChanged()
-      )
-    ),
-    // TODO: Throttle?
+        // If "reminder" changed, let the first value pass so that distinctUntilChanged will not filter `1`
+        filter((severity) => (reminderIndex === 0 ? severity > 0 : true)),
+        distinctUntilChanged(),
+        // If "reminder" changed, _ will be 0 when timerIndex===0, we'd like to pass:
+        filter((_, timerIndex) => {
+          return reminderIndex === 0 || (reminderIndex > 0 && timerIndex !== 0);
+        })
+      );
+    }),
     shareReplay()
   );
 

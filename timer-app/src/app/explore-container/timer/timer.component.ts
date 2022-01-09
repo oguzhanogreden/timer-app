@@ -59,7 +59,7 @@ export class TimerComponent implements OnInit, AfterViewInit {
       });
 
     this.timer.reminder$.pipe(tap((_) => this.reminder.emit())).subscribe({
-      next: (x) => console.log(x),
+      // next: (x) => console.log(x),
       error: console.error,
     });
   }
