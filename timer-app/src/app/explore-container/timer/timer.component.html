@@ -18,9 +18,12 @@
         size="large"
       ></ion-icon>
     </button>
-
-    <div [formGroup]="form">
-      <ion-input formControlName="remindEveryMinutes" type="number"></ion-input>
-    </div>
+    
+    <ion-item>
+      <ion-label >
+        Remind every (mins)
+      </ion-label>
+      <ion-input formControlName="remindEveryMinutes" type="number" size=1></ion-input>
+    </ion-item>
   </ion-card-content>
 </ion-card>

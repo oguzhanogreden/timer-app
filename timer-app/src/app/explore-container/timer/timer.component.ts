@@ -10,7 +10,7 @@ import {
 } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Duration } from 'luxon';
-import { debounceTime, filter, map, take, tap } from 'rxjs/operators';
+import { debounceTime, distinctUntilChanged, filter, map, take, tap } from 'rxjs/operators';
 import { Timer, TimerState } from './timer.model';
 
 type FormValue = {
@@ -47,11 +47,12 @@ export class TimerComponent implements OnInit, AfterViewInit {
         this.form.setValue({ remindEveryMinutes } as FormValue)
       );
 
-    this.form.valueChanges
+    this.form.get('remindEveryMinutes').valueChanges
       .pipe(
         debounceTime(200),
-        filter((_) => this.form.valid),
-        map((value: FormValue) => value.remindEveryMinutes)
+        // TODO: Smelly?
+        filter(_ => this.form.get('remindEveryMinutes').valid),
+        distinctUntilChanged(),
       )
       .subscribe({
         next: (remindEveryMinutes) =>

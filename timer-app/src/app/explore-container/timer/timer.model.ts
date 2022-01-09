@@ -6,7 +6,7 @@ import {
   of,
   ReplaySubject,
   Subject,
-  timer,
+  timer
 } from 'rxjs';
 import {
   distinctUntilChanged,
@@ -17,7 +17,7 @@ import {
   skip,
   startWith,
   switchMap,
-  tap,
+  tap
 } from 'rxjs/operators';
 
 type TimerCommand = 'start' | 'stop';
@@ -81,7 +81,7 @@ export class Timer {
         );
       }
     }),
-    scan((passedMillis, tick) => passedMillis + tick * 60, 0),
+    scan((passedMillis, tick) => passedMillis + tick, 0),
     map((passedMillis) => Duration.fromMillis(passedMillis)),
     shareReplay(1)
   );
