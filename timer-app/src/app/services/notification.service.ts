@@ -50,9 +50,7 @@ export class NotificationService {
 
   private handleTimerNotifications() {
     this.timerService.timers$
-      .pipe(
-        mergeMap((t) => t.reminderSeverity$.pipe(switchMap((_) => t.name$)))
-      )
+      .pipe(mergeMap((t) => t.reminder$.pipe(switchMap((_) => t.name$))))
       // TODO: Investigate - Notification() works differently for Chrome [= no sound] and Firefox [= sound]
       .subscribe(
         (name) => new Notification(`You've reached your goal for ${name}`)
