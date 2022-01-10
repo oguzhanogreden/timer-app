@@ -1,13 +1,18 @@
 import { Injectable } from '@angular/core';
 import { ToastController } from '@ionic/angular';
 import { Subject } from 'rxjs';
-import { filter, mergeMap, switchMap } from 'rxjs/operators';
+import { filter, mergeMap, switchMap, tap } from 'rxjs/operators';
+import { apiFactory, NotificationApi } from './native/api';
 import { TimerService } from './timer.service';
+
+type NotificationWrapper = {
+  notificationApi: NotificationApi;
+};
 
 @Injectable({
   providedIn: 'root',
 })
-export class NotificationService {
+export class NotificationService implements NotificationWrapper {
   _allowed = new Subject<boolean>();
   allowed$ = this._allowed.pipe();
 
@@ -19,10 +24,15 @@ export class NotificationService {
     this.handleTimerNotifications();
   }
 
+  notificationApi: NotificationApi = apiFactory();
+
   requestPermission() {
-    Notification.requestPermission().then(
-      (allowed) => this._allowed.next(allowed === 'granted') // TODO: What happens with "default"?
-    );
+    this.notificationApi
+      .requestPermission()
+      .pipe(tap(console.log))
+      .subscribe({
+        next: (allowed) => this._allowed.next(allowed),
+      });
   }
 
   private async displayNotificationNotAllowedToast() {
