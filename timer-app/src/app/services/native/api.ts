@@ -1,30 +1,23 @@
-import { Capacitor } from '@capacitor/core';
-import { LocalNotifications } from '@capacitor/local-notifications';
-import { from, Observable, of } from 'rxjs';
+// TODO: Organize
+import {
+  LocalNotifications,
+  ScheduleOptions
+} from '@capacitor/local-notifications';
+import { from, Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 
 export const apiFactory = () => {
-  const platform = Capacitor.getPlatform();
-  return {
-    requestPermission: () => {
-      switch (platform) {
-        case 'ios':
-          return checkPermissions();
-        case 'web':
-          // Notification.requestPermission().then(
-          //   (allowed) => this._allowed.next(allowed === 'granted') // TODO: What happens with "default"?
-          // );
-
-          return of(true);
-        case 'android':
-          return of(false);
-      }
-    },
+  const api: NotificationApi = {
+    notifyNow: () => notify(),
+    requestPermission: () => checkPermissions(),
   };
+
+  return api;
 };
 
 export type NotificationApi = {
   requestPermission: () => Observable<boolean>; // TODO: Account for third option
+  notifyNow: () => Observable<null>;
 };
 
 type PermissionCheckApi = () => Observable<boolean>;
@@ -36,4 +29,19 @@ const checkPermissions: PermissionCheckApi = () => {
     map((status) => status.display),
     map((value: Permitted) => value === 'prompt')
   );
+};
+
+// TODO: Fix
+type NotifyApi = () => Observable<null>;
+const notify: NotifyApi = () => {
+  const options: ScheduleOptions = {
+    notifications: [
+      {
+        body: 'test',
+        title: 'asd',
+        id: 1,
+      },
+    ],
+  };
+  return from(LocalNotifications.schedule(options)).pipe(map((_) => null));
 };

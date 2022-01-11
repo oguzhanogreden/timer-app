@@ -62,8 +62,11 @@ export class NotificationService implements NotificationWrapper {
     this.timerService.timers$
       .pipe(mergeMap((t) => t.reminder$.pipe(switchMap((_) => t.name$))))
       // TODO: Investigate - Notification() works differently for Chrome [= no sound] and Firefox [= sound]
-      .subscribe(
-        (name) => new Notification(`You've reached your goal for ${name}`)
+      .subscribe((name) =>
+        this.notificationApi
+          .notifyNow()
+          .pipe(tap((_) => console.log('here')))
+          .subscribe(console.log)
       );
   }
 }
