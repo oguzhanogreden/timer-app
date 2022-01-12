@@ -81,7 +81,7 @@ export class Timer {
         );
       }
     }),
-    scan((passedMillis, tick) => passedMillis + tick * 60, 0),
+    scan((passedMillis, tick) => passedMillis + tick * 180, 0),
     map((passedMillis) => Duration.fromMillis(passedMillis)),
     shareReplay(1)
   );

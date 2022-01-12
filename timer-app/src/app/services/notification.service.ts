@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { ToastController } from '@ionic/angular';
-import { Subject } from 'rxjs';
-import { filter, mergeMap, switchMap, tap } from 'rxjs/operators';
+import { of, Subject } from 'rxjs';
+import { filter, mergeMap, switchMap } from 'rxjs/operators';
 import { apiFactory, NotificationApi } from './native/api';
 import { TimerService } from './timer.service';
 
@@ -26,10 +26,14 @@ export class NotificationService implements NotificationWrapper {
 
   notificationApi: NotificationApi = apiFactory();
 
-  requestPermission() {
+  checkPermission() {
     this.notificationApi
-      .requestPermission()
-      .pipe(tap(console.log))
+      .checkPermission()
+      .pipe(
+        switchMap((granted) =>
+          granted ? of(granted) : this.notificationApi.requestPermission()
+        )
+      )
       .subscribe({
         next: (allowed) => this._allowed.next(allowed),
       });
@@ -64,9 +68,8 @@ export class NotificationService implements NotificationWrapper {
       // TODO: Investigate - Notification() works differently for Chrome [= no sound] and Firefox [= sound]
       .subscribe((name) =>
         this.notificationApi
-          .notifyNow()
-          .pipe(tap((_) => console.log('here')))
-          .subscribe(console.log)
+          .notifyNow('Ping!', name)
+          .subscribe(() => {})
       );
   }
 }

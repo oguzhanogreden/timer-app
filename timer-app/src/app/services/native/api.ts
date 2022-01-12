@@ -1,47 +1,62 @@
 // TODO: Organize
 import {
   LocalNotifications,
-  ScheduleOptions
+  ScheduleOptions,
 } from '@capacitor/local-notifications';
 import { from, Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 
 export const apiFactory = () => {
   const api: NotificationApi = {
-    notifyNow: () => notify(),
-    requestPermission: () => checkPermissions(),
+    notifyNow: (body: string, title: string) => notify(body, title),
+    checkPermission: () => checkPermissions(),
+    requestPermission: () => requestPermission(),
   };
 
   return api;
 };
 
 export type NotificationApi = {
-  requestPermission: () => Observable<boolean>; // TODO: Account for third option
-  notifyNow: () => Observable<null>;
+  checkPermission: CheckPermissionApi; // TODO: Account for third option
+  notifyNow: NotifyApi;
+  requestPermission: RequestPermissionApi;
 };
 
-type PermissionCheckApi = () => Observable<boolean>;
+type CheckPermissionApi = () => Observable<boolean>;
 
-type Permitted = 'prompt';
+type Permission = Permitted | Ask;
 
-const checkPermissions: PermissionCheckApi = () => {
+type Permitted = 'granted';
+type Ask = 'prompt';
+
+const checkPermissions: CheckPermissionApi = () => {
   return from(LocalNotifications.checkPermissions()).pipe(
     map((status) => status.display),
-    map((value: Permitted) => value === 'prompt')
+    map((value: Permission) => value === 'granted')
   );
 };
 
-// TODO: Fix
-type NotifyApi = () => Observable<null>;
-const notify: NotifyApi = () => {
+type NotifyApi = (body: string, title: string) => Observable<null>;
+const notify: NotifyApi = (body: string, title: string) => {
   const options: ScheduleOptions = {
     notifications: [
       {
-        body: 'test',
-        title: 'asd',
-        id: 1,
+        body: body,
+        title: title,
+        id: new Date().getTime() + Math.floor(Math.random() * 10),
+        summaryText: body,
+        sound: null,
+        schedule: {
+          at: new Date(Date.now()),
+        },
       },
     ],
   };
   return from(LocalNotifications.schedule(options)).pipe(map((_) => null));
 };
+
+type RequestPermissionApi = () => Observable<boolean>;
+const requestPermission: RequestPermissionApi = () =>
+  from(LocalNotifications.requestPermissions()).pipe(
+    map((status) => status.display === 'granted') // TODO: Other cases
+  );
