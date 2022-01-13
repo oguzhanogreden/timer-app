@@ -14,12 +14,13 @@ type NotificationWrapper = {
 })
 export class NotificationService implements NotificationWrapper {
   _allowed = new Subject<boolean>();
-  allowed$ = this._allowed.pipe();
+  allowed$ = this._allowed.pipe(shareReplay(1));
 
   constructor(
     private toastController: ToastController,
     private timerService: TimerService
   ) {
+    this.checkPermission()
     this.handleNotificationsNotAllowed();
     this.handleTimerNotifications();
   }
@@ -31,6 +32,7 @@ export class NotificationService implements NotificationWrapper {
       .checkPermission()
       .pipe(
         switchMap((granted) =>
+        // TODO: DO not request here
           granted ? of(granted) : this.notificationApi.requestPermission()
         )
       )
