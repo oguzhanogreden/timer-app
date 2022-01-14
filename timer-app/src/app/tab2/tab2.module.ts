@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { IonicModule } from '@ionic/angular';
 import { ExploreContainerComponentModule } from '../explore-container/explore-container.module';
 import { NotificationSettingsComponent } from '../notification-settings/notification-settings.component';
+import { OnboardingComponent } from '../onboarding/onboarding.component';
 import { Tab2PageRoutingModule } from './tab2-routing.module';
 import { Tab2Page } from './tab2.page';
 
@@ -15,6 +16,6 @@ import { Tab2Page } from './tab2.page';
     ExploreContainerComponentModule,
     Tab2PageRoutingModule,
   ],
-  declarations: [Tab2Page, NotificationSettingsComponent],
+  declarations: [Tab2Page, NotificationSettingsComponent, OnboardingComponent],
 })
 export class Tab2PageModule {}
