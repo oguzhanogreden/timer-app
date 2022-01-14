@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { ToastController } from '@ionic/angular';
-import { of, Subject } from 'rxjs';
-import { filter, mergeMap, switchMap } from 'rxjs/operators';
+import { Subject } from 'rxjs';
+import { filter, mergeMap, shareReplay, switchMap } from 'rxjs/operators';
 import { apiFactory, NotificationApi } from './native/api';
 import { TimerService } from './timer.service';
 
@@ -20,7 +20,7 @@ export class NotificationService implements NotificationWrapper {
     private toastController: ToastController,
     private timerService: TimerService
   ) {
-    this.checkPermission()
+    this.checkPermission();
     this.handleNotificationsNotAllowed();
     this.handleTimerNotifications();
   }
@@ -28,17 +28,9 @@ export class NotificationService implements NotificationWrapper {
   notificationApi: NotificationApi = apiFactory();
 
   checkPermission() {
-    this.notificationApi
-      .checkPermission()
-      .pipe(
-        switchMap((granted) =>
-        // TODO: DO not request here
-          granted ? of(granted) : this.notificationApi.requestPermission()
-        )
-      )
-      .subscribe({
-        next: (allowed) => this._allowed.next(allowed),
-      });
+    this.notificationApi.checkPermission().subscribe({
+      next: (allowed) => this._allowed.next(allowed),
+    });
   }
 
   private async displayNotificationNotAllowedToast() {
@@ -69,9 +61,7 @@ export class NotificationService implements NotificationWrapper {
       .pipe(mergeMap((t) => t.reminder$.pipe(switchMap((_) => t.name$))))
       // TODO: Investigate - Notification() works differently for Chrome [= no sound] and Firefox [= sound]
       .subscribe((name) =>
-        this.notificationApi
-          .notifyNow('Ping!', name)
-          .subscribe(() => {})
+        this.notificationApi.notifyNow('Ping!', name).subscribe(() => {})
       );
   }
 }

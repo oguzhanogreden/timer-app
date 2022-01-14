@@ -1,4 +1,5 @@
 // TODO: Organize
+import { PermissionState } from '@capacitor/core';
 import {
   LocalNotifications,
   ScheduleOptions,
@@ -55,8 +56,8 @@ const notify: NotifyApi = (body: string, title: string) => {
   return from(LocalNotifications.schedule(options)).pipe(map((_) => null));
 };
 
-type RequestPermissionApi = () => Observable<boolean>;
+type RequestPermissionApi = () => Observable<PermissionState>;
 const requestPermission: RequestPermissionApi = () =>
   from(LocalNotifications.requestPermissions()).pipe(
-    map((status) => status.display === 'granted') // TODO: Other cases
+    map((status) => status.display)
   );
