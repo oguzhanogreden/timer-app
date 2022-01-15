@@ -47,9 +47,9 @@ const notify: NotifyApi = (body: string, title: string) => {
         id: new Date().getTime() + Math.floor(Math.random() * 10),
         summaryText: body,
         sound: null,
-        schedule: {
-          at: new Date(Date.now()),
-        },
+        // schedule: {
+        //   // at: new Date(Date.now() + 1),
+        // },
       },
     ],
   };

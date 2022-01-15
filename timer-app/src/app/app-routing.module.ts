@@ -1,6 +1,5 @@
 import { NgModule } from '@angular/core';
 import { PreloadAllModules, Route, RouterModule } from '@angular/router';
-import { Tab2Data } from './tab2/tab2.page';
 
 type TypedRoute = Route & {
   path?: AppRoutePath;
@@ -11,9 +10,9 @@ const routes: TypedRoutes = [
   {
     path: 'onboarding',
     redirectTo: '/tabs/tab2',
-    data: {
-      onboarding: true,
-    } as Tab2Data, // Ineffective, search #effective
+    // data: {
+    //   onboarding: true,
+    // } as Tab2Data, // Ineffective, search #effective
   },
   {
     path: '',

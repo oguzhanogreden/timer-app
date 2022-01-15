@@ -1,8 +1,13 @@
 import { Component, ElementRef } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { ModalController } from '@ionic/angular';
-import { map, tap } from 'rxjs/operators';
+import { Observable } from 'rxjs';
+import { filter, first, map } from 'rxjs/operators';
 import { OnboardingComponent } from '../onboarding/onboarding.component';
+import {
+  User,
+  UserProfileService
+} from '../services/user/user-profile.service';
 
 @Component({
   selector: 'app-tab2',
@@ -11,19 +16,29 @@ import { OnboardingComponent } from '../onboarding/onboarding.component';
 })
 export class Tab2Page {
   _routeData = this.route.data.pipe(
-    map((data) => data as Tab2Data),
-    tap((x) => console.log(x))
+    map((data) => data as Tab2Data)
+    // tap((x) => console.log(x))
   );
   _onboarding = this._routeData.pipe(map((data) => data.onboarding));
+  _user: Observable<User>;
 
   constructor(
     private route: ActivatedRoute,
     private modalController: ModalController,
-    public elem: ElementRef
+    public elem: ElementRef,
+    private userService: UserProfileService
   ) {
+    this._user = this.userService.user$;
     this._onboarding.pipe().subscribe((_) => _);
 
-    this.presentOnboardingModal().then((m) => m.present());
+    this._user
+      .pipe(
+        filter((u) => !u.onboarded),
+        first()
+      )
+      .subscribe((_) => {
+        this.presentOnboardingModal().then((m) => m.present());
+      });
   }
 
   private async presentOnboardingModal() {
@@ -33,7 +48,7 @@ export class Tab2Page {
       initialBreakpoint: 0.5,
     });
 
-    modal.onWillDismiss().then((x) => x);
+    modal.onWillDismiss().then((_) => this.userService.completeOnBoarding());
 
     return modal;
   }
