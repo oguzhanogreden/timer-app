@@ -1,7 +1,8 @@
 import { Injectable } from '@angular/core';
 import { ToastController } from '@ionic/angular';
-import { Subject } from 'rxjs';
+import { Observable, of, Subject } from 'rxjs';
 import { filter, mergeMap, shareReplay, switchMap } from 'rxjs/operators';
+import { Timer } from '../explore-container/timer/timer.model';
 import { apiFactory, NotificationApi } from './native/api';
 import { TimerService } from './timer.service';
 
@@ -16,10 +17,14 @@ export class NotificationService implements NotificationWrapper {
   _allowed = new Subject<boolean>();
   allowed$ = this._allowed.pipe(shareReplay(1));
 
+  timers$: Observable<Timer>;
+
   constructor(
     private toastController: ToastController,
     private timerService: TimerService
   ) {
+    this.timers$ = timerService.timers$;
+
     this.checkPermission();
     this.handleNotificationsNotAllowed();
     this.handleTimerNotifications();
@@ -50,14 +55,16 @@ export class NotificationService implements NotificationWrapper {
   }
 
   private handleNotificationsNotAllowed() {
-    // TODO: If it is later allowed, e.g. due to a new promp while starting a new timer hide all toasts
-    this.allowed$
-      .pipe(filter((x) => !x))
+    this.timers$
+      .pipe(
+        mergeMap((t) => t.state$.pipe(filter((x) => x === 'ticking'))),
+        switchMap((s) => of(null))
+      )
       .subscribe((_) => this.displayNotificationNotAllowedToast());
   }
 
   private handleTimerNotifications() {
-    this.timerService.timers$
+    this.timers$
       .pipe(mergeMap((t) => t.reminder$.pipe(switchMap((_) => t.name$))))
       // TODO: Investigate - Notification() works differently for Chrome [= no sound] and Firefox [= sound]
       .subscribe((name) =>
