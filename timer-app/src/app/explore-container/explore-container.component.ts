@@ -31,7 +31,7 @@ export class ExploreContainerComponent implements OnInit {
   );
 
   startTimer() {
-    this.notificationService.requestPermission();
-    this.timerService.startTimer()
+    this.notificationService.checkPermission();
+    this.timerService.startTimer();
   }
 }

@@ -1,0 +1,10 @@
+<ion-list>
+  <ion-item lines="full">
+    <ion-label> Notifications </ion-label>
+
+    <ion-text slot="end">
+      <span *ngIf="enabled$ | async; else disabled">Enabled</span>
+      <ng-template #disabled>Disabled</ng-template>
+    </ion-text>
+  </ion-item>
+</ion-list>
