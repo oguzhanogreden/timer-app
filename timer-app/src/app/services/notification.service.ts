@@ -1,28 +1,41 @@
 import { Injectable } from '@angular/core';
 import { ToastController } from '@ionic/angular';
-import { Subject } from 'rxjs';
-import { filter, mergeMap, switchMap } from 'rxjs/operators';
+import { Observable, of, Subject } from 'rxjs';
+import { filter, mergeMap, shareReplay, switchMap, tap } from 'rxjs/operators';
+import { Timer } from '../explore-container/timer/timer.model';
+import { apiFactory, NotificationApi } from './native/api';
 import { TimerService } from './timer.service';
+
+type NotificationWrapper = {
+  notificationApi: NotificationApi;
+};
 
 @Injectable({
   providedIn: 'root',
 })
-export class NotificationService {
+export class NotificationService implements NotificationWrapper {
   _allowed = new Subject<boolean>();
-  allowed$ = this._allowed.pipe();
+  allowed$ = this._allowed.pipe(shareReplay(1));
+
+  timers$: Observable<Timer>;
 
   constructor(
     private toastController: ToastController,
     private timerService: TimerService
   ) {
+    this.timers$ = timerService.timers$;
+
+    this.checkPermission();
     this.handleNotificationsNotAllowed();
     this.handleTimerNotifications();
   }
 
-  requestPermission() {
-    Notification.requestPermission().then(
-      (allowed) => this._allowed.next(allowed === 'granted') // TODO: What happens with "default"?
-    );
+  notificationApi: NotificationApi = apiFactory();
+
+  checkPermission() {
+    this.notificationApi.checkPermission().subscribe({
+      next: (allowed) => this._allowed.next(allowed),
+    });
   }
 
   private async displayNotificationNotAllowedToast() {
@@ -42,18 +55,28 @@ export class NotificationService {
   }
 
   private handleNotificationsNotAllowed() {
-    // TODO: If it is later allowed, e.g. due to a new promp while starting a new timer hide all toasts
-    this.allowed$
-      .pipe(filter((x) => !x))
+    this.timers$
+      .pipe(
+        mergeMap((t) => t.state$.pipe(filter((x) => x === 'ticking'))),
+        switchMap((s) => of(null))
+      )
       .subscribe((_) => this.displayNotificationNotAllowedToast());
   }
 
   private handleTimerNotifications() {
-    this.timerService.timers$
-      .pipe(mergeMap((t) => t.reminder$.pipe(switchMap((_) => t.name$))))
+    this.allowed$
+      .pipe(
+        filter((allowed) => allowed),
+        switchMap((_) =>
+          this.timers$.pipe(
+            mergeMap((t) => t.reminder$.pipe(switchMap((_) => t.name$)))
+          )
+        ),
+        tap(console.log),
+      )
       // TODO: Investigate - Notification() works differently for Chrome [= no sound] and Firefox [= sound]
-      .subscribe(
-        (name) => new Notification(`You've reached your goal for ${name}`)
+      .subscribe((name) =>
+        this.notificationApi.notifyNow('Ping!', name).subscribe(() => {})
       );
   }
 }
