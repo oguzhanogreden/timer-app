@@ -6,12 +6,12 @@ import {
   OnInit,
   Output,
   Pipe,
-  PipeTransform,
+  PipeTransform
 } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Duration } from 'luxon';
 import { debounceTime, distinctUntilChanged, filter, map, take, tap } from 'rxjs/operators';
-import { Timer, TimerState } from './timer.model';
+import { State, Timer } from './timer.model';
 
 type FormValue = {
   remindEveryMinutes: number;
@@ -67,7 +67,7 @@ export class TimerComponent implements OnInit, AfterViewInit {
 
   ngAfterViewInit(): void {}
 
-  onToggleButtonClick(timerState: TimerState) {
+  onToggleButtonClick(timerState: State) {
     switch (timerState) {
       case 'ticking':
         this.timer.stopTimer();

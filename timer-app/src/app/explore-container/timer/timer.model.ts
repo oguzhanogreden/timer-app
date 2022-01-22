@@ -1,27 +1,26 @@
-import { Duration } from 'luxon';
+import { DateTime, Duration } from 'luxon';
 import {
   combineLatest,
   merge,
   NEVER,
-  of,
-  ReplaySubject,
+  of, ReplaySubject,
   Subject,
-  timer,
+  timer
 } from 'rxjs';
 import {
   distinctUntilChanged,
   filter,
   map,
   scan,
-  shareReplay,
-  skip,
-  startWith,
+  shareReplay, skip, startWith,
   switchMap,
-  tap,
+  take,
+  tap
 } from 'rxjs/operators';
+import { v4 as uuidv4 } from 'uuid';
 
-type TimerCommand = 'start' | 'stop';
-export type TimerState = 'ticking' | 'paused';
+type Command = 'start' | 'stop';
+export type State = 'ticking' | 'paused';
 
 type TimerConfiguration = {
   // tickEveryMilliseconds: number,
@@ -32,6 +31,13 @@ type TimerConfiguration = {
 const DEFAULT_REMINDER = Duration.fromObject({ minutes: 5 });
 
 export class Timer {
+  id: string;
+
+  private _startedAt = new ReplaySubject<DateTime>(1);
+  public startedAt$ = this._startedAt.pipe();
+  
+  private _alreadyElapsed = this.startedAt$.pipe(take(1), map(s => DateTime.now().toMillis() - s.toMillis()), shareReplay(1));
+
   private _timerPrecision = of(1000);
   private _reminderAt = new Subject<Duration>();
   private _name = new ReplaySubject<string>(1);
@@ -54,11 +60,11 @@ export class Timer {
   private _timerStopped = new Subject();
 
   private _commands = merge(
-    this._timerStarted.pipe(map((_) => 'start' as TimerCommand)),
-    this._timerStopped.pipe(map((_) => 'stop' as TimerCommand))
+    this._timerStarted.pipe(map((_) => 'start' as Command)),
+    this._timerStopped.pipe(map((_) => 'stop' as Command))
   ).pipe(shareReplay());
 
-  _state = new Subject<TimerState>();
+  _state = new Subject<State>();
   state$ = this._state.pipe(shareReplay(1));
 
   timer$ = this._commands.pipe(
@@ -66,22 +72,29 @@ export class Timer {
       if (command === 'start') {
         return this._timerPrecision.pipe(
           tap((_) => this._state.next('ticking')),
-          switchMap((tick) =>
-            timer(0, tick).pipe(
-              skip(1),
-              map((_) => tick),
-              startWith(0)
-            )
+          switchMap((timerPrecision) =>
+            // TODO: Should ticks if e.g. startTime changes?
+            //       Does it matter if startTime changed 0.01 past the tick or tick-0.01 past it?
+            timer(0, timerPrecision).pipe(
+              skip(1), // Ignore first tick so that we can emit 0 to begin with
+              map((_) => timerPrecision),
+              startWith(0), // Emit 0 to begin with
+            ),
           )
         );
       } else {
-        return of('paused' as TimerState).pipe(
+        return of('paused' as State).pipe(
           tap((state) => this._state.next(state)),
           switchMap((_) => NEVER)
         );
       }
     }),
-    scan((passedMillis, tick) => passedMillis + tick * 180, 0),
+    scan((passedMillis, tick) => passedMillis + tick, 0),
+    switchMap((passedMills) =>
+      this._alreadyElapsed.pipe(
+        map((alreadyElapsed) => passedMills + alreadyElapsed),
+      )
+    ),
     map((passedMillis) => Duration.fromMillis(passedMillis)),
     shareReplay(1)
   );
@@ -108,15 +121,22 @@ export class Timer {
     this._reminderAt.next(Duration.fromObject({ minutes: m }));
   }
 
-  constructor({ id, name, startedAt }: { id?: string; name?: string; startedAt?: number; } = {}) {
+  constructor({
+    id,
+    name,
+    startedAtMilliseconds = DateTime.now().toMillis()
+  }: { id?: string; name?: string; startedAtMilliseconds?: number } = {}) {
     this.id = id ?? uuidv4();
     this._name.next(name ?? 'New timer');
-    this.startedAt = startedAt ?? Date.now();
+    this._startedAt.next(DateTime.fromMillis(startedAtMilliseconds));
 
+    // TODO: Smelly
     this.timer$.subscribe();
     this.reminder$.subscribe();
-    this._commands.subscribe();
     this.state$.subscribe();
+    this._commands.subscribe();
+    
+    this.startTimer();
   }
 
   startTimer() {
