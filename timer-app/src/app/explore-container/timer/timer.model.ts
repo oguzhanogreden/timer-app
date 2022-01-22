@@ -108,8 +108,10 @@ export class Timer {
     this._reminderAt.next(Duration.fromObject({ minutes: m }));
   }
 
-  constructor(timerName?: string) {
-    this._name.next(timerName ?? 'New timer');
+  constructor({ id, name, startedAt }: { id?: string; name?: string; startedAt?: number; } = {}) {
+    this.id = id ?? uuidv4();
+    this._name.next(name ?? 'New timer');
+    this.startedAt = startedAt ?? Date.now();
 
     this.timer$.subscribe();
     this.reminder$.subscribe();

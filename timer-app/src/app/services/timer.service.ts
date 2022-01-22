@@ -17,9 +17,11 @@ export class TimerService {
 
     this._timers.next(timer);
 
+  startExistingTimer(timerState: TimerState) {
+    const timer = new Timer(timerState);
     timer.startTimer();
-
-    return timer;
+    
+    this._timers.next(timer);
   }
 
   getTimer(t: Timer) {
