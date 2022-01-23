@@ -73,7 +73,7 @@ export class TimerComponent implements OnInit, AfterViewInit {
         this.timer.stopTimer();
         break;
       case 'paused':
-        this.timer.startTimer();
+        this.timer.resumeTimer();
         break;
     }
   }

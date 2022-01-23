@@ -144,12 +144,17 @@ export class Timer {
 
     this.startTimer();
   }
-
-  private startTimer() {
-    this._timerStarted.next();
+  
+  resumeTimer() {
+    this.startTimer()
   }
 
   stopTimer() {
     this._timerStopped.next();
   }
+
+  private startTimer() {
+    this._timerStarted.next();
+  }
+
 }
