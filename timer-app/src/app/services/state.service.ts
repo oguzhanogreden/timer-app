@@ -4,10 +4,7 @@ import {
   filter,
   map,
   mergeAll,
-  switchMap,
-  take,
-  tap,
-  toArray
+  switchMap, toArray
 } from 'rxjs/operators';
 import { StorageService } from './storage.service';
 
@@ -25,7 +22,7 @@ export class StateService implements OnDestroy {
 
   constructor(private storageService: StorageService) {
     this.restoreTimersFromStorage().subscribe({
-      // next: (timers) => this._timers.next(timers),
+      next: (timers) => this._timers.next(timers),
       error: (err) => console.log(err),
       complete: () => console.log(),
     });
@@ -35,8 +32,6 @@ export class StateService implements OnDestroy {
 
   private getStoredTimerStates() {
     return this.storageService.storedObjects().pipe(
-      tap((_) => console.log(_)),
-      take(1),
       mergeAll(),
       filter((x) => isTimerState(x)),
       map((x) => x as TimerState),
@@ -52,7 +47,6 @@ export class StateService implements OnDestroy {
 
   private storeOnStateChange = () =>
     this._timers.pipe(
-      tap((_) => console.log(_)),
       mergeAll(),
       switchMap((t) => {
         console.log(t.name);

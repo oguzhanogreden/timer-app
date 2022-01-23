@@ -16,6 +16,7 @@ export class StorageService {
   private storedKeys() {
     return this._storage.pipe(
       filter((storage) => storage !== null),
+      take(1), // Storage observables should be like http, they should complete.
       switchMap((storage) => from(storage.keys()))
     );
   }
@@ -37,10 +38,9 @@ export class StorageService {
     }
 
     // this seems to be the cause of typerror
-    // from(this._storage.getValue().set(key, value)).pipe(
-    //   switchMap((_) => of(null))
-    // );
-    return of(null);
+    from(this._storage.getValue().set(key, value)).pipe(
+      switchMap((_) => of(null))
+    );
   }
 
   storedObjects() {
