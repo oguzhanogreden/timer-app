@@ -1,10 +1,10 @@
 import { Injectable, OnDestroy } from '@angular/core';
 import { BehaviorSubject, throwError } from 'rxjs';
-import { filter, map, mergeAll, switchMap, toArray } from 'rxjs/operators';
+import { distinctUntilChanged, filter, map, mergeAll, switchMap, tap, toArray } from 'rxjs/operators';
 import { StorageService } from './storage.service';
 
-export type TimerState = { id: string; name: string; startedAt: number };
-export type TimerUpdate = { id: string; name?: string; startedAt?: number };
+export type TimerState = { id: string; name: string; startedAt: number; stoppedAt?: number };
+export type TimerUpdate = { id: string; name?: string; startedAt?: number; stoppedAt?: number };
 
 type StateServiceError = 'RESTORE_ERROR';
 
@@ -43,27 +43,37 @@ export class StateService implements OnDestroy {
   private storeOnStateChange = () =>
     this._timers.pipe(
       mergeAll(),
+      tap(_ => console.log(_)),
+      distinctUntilChanged((left, right) => left.stoppedAt == right.stoppedAt),
+      // tap(_ => console.log(_)),
       switchMap((t) => this.storageService.set(t.id, t))
     );
 
   addTimer(timer: TimerState) {
     const timers = [...this._timers.getValue(), timer];
 
-    this._timers.next(timers);
+    this._timers.next(timers); // scan map potential for collecting objects
+    return this.timers$;
   }
 
   modifyTimer(timerUpdate: TimerUpdate) {
+    // console.log(timerUpdate)
     const timers = this._timers.getValue();
 
+          console.log(timerUpdate)
     this._timers.next(
       timers.map((t) => {
         if (t.id === timerUpdate.id) {
+          console.log(t)
           return { ...t, ...timerUpdate } as TimerState;
         }
+        console.warn(`Timer with id can't be modified because it does not exist, you've passed: ${timerUpdate.id}`)
 
         return t;
       })
     );
+    
+    return this.timers$;
   }
 
   deleteTimer(timer: TimerState) {

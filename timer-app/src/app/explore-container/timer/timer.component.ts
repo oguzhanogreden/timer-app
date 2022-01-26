@@ -11,6 +11,7 @@ import {
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Duration } from 'luxon';
 import { debounceTime, distinctUntilChanged, filter, map, take, tap } from 'rxjs/operators';
+import { TimerService } from 'src/app/services/timer.service';
 import { State, Timer } from './timer.model';
 
 type FormValue = {
@@ -31,7 +32,7 @@ export class TimerComponent implements OnInit, AfterViewInit {
 
   form: FormGroup;
 
-  constructor(private formBuilder: FormBuilder) {}
+  constructor(private formBuilder: FormBuilder, private timerService: TimerService) {}
 
   ngOnInit() {
     this.form = this.formBuilder.group({
@@ -66,11 +67,15 @@ export class TimerComponent implements OnInit, AfterViewInit {
   }
 
   ngAfterViewInit(): void {}
+  
+  onStopTimerClicked(timer: Timer) {
+    this.timerService.stopTimer(timer).subscribe();
+  }
 
   onToggleButtonClick(timerState: State) {
     switch (timerState) {
       case 'ticking':
-        this.timer.stopTimer();
+        this.timer.pauseTimer();
         break;
       case 'paused':
         this.timer.resumeTimer();

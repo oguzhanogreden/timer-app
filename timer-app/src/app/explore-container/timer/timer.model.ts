@@ -1,9 +1,7 @@
 import { DateTime, Duration } from 'luxon';
 import {
   combineLatest,
-  merge,
-  NEVER,
-  of,
+  merge, NEVER, Observable, of,
   ReplaySubject,
   Subject,
   timer
@@ -17,13 +15,12 @@ import {
   shareReplay,
   skip,
   startWith,
-  switchMap,
-  tap
+  switchMap
 } from 'rxjs/operators';
 import { v4 as uuidv4 } from 'uuid';
 
-type Command = 'start' | 'stop';
-export type State = 'ticking' | 'paused';
+type Command = 'start' | 'pause' | 'stop';
+export type State = 'ticking' | 'paused' | 'stopped';
 
 type TimerConfiguration = {
   // tickEveryMilliseconds: number,
@@ -34,10 +31,14 @@ type TimerConfiguration = {
 const DEFAULT_REMINDER = Duration.fromObject({ minutes: 5 });
 
 export class Timer {
-  id: string;
+  private _id = new ReplaySubject<string>(1);
+  id$ = this._id.asObservable();
 
   private _startedAt = new ReplaySubject<DateTime>(1);
   public startedAt$ = this._startedAt.pipe();
+  
+  private _stoppedAt = new ReplaySubject<DateTime | null>(1);
+  public stoppedAt$ = this._stoppedAt.pipe();
 
   private _timerPrecision = of(1000);
   private _reminderAt = new Subject<Duration>();
@@ -58,20 +59,31 @@ export class Timer {
   );
 
   private _timerStarted = new Subject();
+  private _timerPaused = new Subject();
   private _timerStopped = new Subject();
 
   private _commands = merge(
     this._timerStarted.pipe(map((_) => 'start' as Command)),
-    this._timerStopped.pipe(map((_) => 'stop' as Command))
+    this._timerPaused.pipe(map((_) => 'pause' as Command)),
+    this._timerStopped.pipe(map((_) => 'stop' as Command)),
   ).pipe(shareReplay());
-
-  _state = new Subject<State>();
-  state$ = this._state.pipe(shareReplay(1));
-
-  timer$ = this._commands.pipe(
-    switchMap((command) => {
-      if (command === 'start') {
-        // this._timerPrecision.pipe(
+  
+  // _state = new Subject<State>();
+  // state$ = this._state.pipe(shareReplay(1));
+  state$: Observable<State> = this._commands.pipe(map(command => {
+    switch (command) {
+      case 'pause':
+        return 'paused';
+      case 'start':
+        return 'ticking';
+      case 'stop':
+        return 'stopped'
+      default:
+        let exhausted: never = command;
+    }
+  }))
+  
+  onStartTimer() {
         return combineLatest([
           this._timerPrecision,
           this.startedAt$.pipe(
@@ -79,7 +91,7 @@ export class Timer {
             map((s) => DateTime.now().toMillis() - s.toMillis())
           ),
         ]).pipe(
-          tap((_) => this._state.next('ticking')),
+          // tap((_) => this._state.next('ticking')),
           switchMap(([timerPrecision, alreadyElapsed]) =>
             // TODO: Should ticks if e.g. startTime changes?
             //       Does it matter if startTime changed 0.01 past the tick or tick-0.01 past it?
@@ -91,11 +103,18 @@ export class Timer {
           ),
           scan((passedMillis, tick) => passedMillis + tick, 0)
         );
-      } else {
-        return of('paused' as State).pipe(
-          tap((state) => this._state.next(state)),
-          switchMap((_) => NEVER)
-        );
+      }
+      
+  timer$ = this._commands.pipe(
+    switchMap(command => {
+      switch (command) {
+        case 'start':
+          return this.onStartTimer();
+        case 'pause':
+        case 'stop':
+          return NEVER;
+        default:
+          const exhausted: never = command;
       }
     }),
     map((passedMillis) => Duration.fromMillis(passedMillis)),
@@ -129,15 +148,16 @@ export class Timer {
     name = 'New timer',
     startedAtMilliseconds = DateTime.now().toMillis(), // DateTime.now().minus(Duration.fromObject({hour: 1})).toMillis()
   }: { id?: string; name?: string; startedAtMilliseconds?: number } = {}) {
-    this.id = id;
+    this._id.next(id);
     this._name.next(name);
     this._startedAt.next(DateTime.fromMillis(startedAtMilliseconds));
+    this._stoppedAt.subscribe();
 
     // TODO: Smelly
+    this._commands.subscribe();
     this.timer$.subscribe();
     this.reminder$.subscribe();
     this.state$.subscribe();
-    this._commands.subscribe();
 
     this.startTimer();
   }
@@ -146,7 +166,12 @@ export class Timer {
     this.startTimer();
   }
 
-  stopTimer() {
+  pauseTimer(): void {
+    this._timerPaused.next();
+  }
+  
+  stopTimer(): void {
+    this._stoppedAt.next(DateTime.now());
     this._timerStopped.next();
   }
 

@@ -28,7 +28,9 @@ export class ExploreContainerComponent implements OnInit {
   timers$ = this.timerService.timers$;
 
   startTimer() {
-    this.notificationService.checkPermission();
-    this.timerService.startNewTimer();
+    this.notificationService.checkPermission()
+    this.timerService.startNewTimer().subscribe()
+    
+    return;
   }
 }

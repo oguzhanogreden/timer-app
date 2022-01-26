@@ -1,8 +1,8 @@
 import { Injectable } from '@angular/core';
-import { combineLatest } from 'rxjs';
-import { map } from 'rxjs/operators';
+import { combineLatest, zip } from 'rxjs';
+import { filter, map, switchMap, tap } from 'rxjs/operators';
 import { Timer } from '../explore-container/timer/timer.model';
-import { StateService, TimerState } from './state.service';
+import { StateService, TimerState, TimerUpdate } from './state.service';
 
 @Injectable({
   providedIn: 'root',
@@ -13,28 +13,44 @@ export class DataService {
   // TODO: getTimer()
 
   addTimer(timer: Timer) {
-    console.log('addtimer is called');
-    combineLatest([
+    return combineLatest([
       timer.name$,
       timer.startedAt$.pipe(map((s) => s.toMillis())),
+      timer.id$,
     ])
       .pipe(
-        map(([name, startedAt]) => {
-          let timerState: TimerState = {
-            id: timer.id,
+        map(([name, startedAt, id]) => ({
+            id: id,
             name: name,
             startedAt: startedAt,
-          };
-          return timerState;
-        })
+          } as TimerState)
+        ),
+        tap(state => this.stateService.addTimer(state)),
+        filter(_ => false)
       )
-      .subscribe((state) => this.stateService.addTimer(state));
+  }
+  
+  modifyTimer(timer: Timer) {
+      // timer.stoppedAt$.pipe(map(dt => dt?.toMillis())).subscribe(_ => console.log(_))
+    return zip(
+      timer.id$,
+      timer.name$,
+      timer.startedAt$.pipe(map(dt => dt.toMillis())),
+      timer.stoppedAt$.pipe(map(dt => dt?.toMillis()))
+    ).pipe(
+      // tap(_ => console.log(_)),
+      map(([id, name, startedAt, stoppedAt]) => ({id: id, name: "asd",stoppedAt: stoppedAt, startedAt: startedAt} as TimerUpdate)),
+      // tap(_ => console.log(_)),
+      switchMap(update => this.stateService.modifyTimer(update)), 
+      filter(_ => false))
   }
 
   loadTimers() {
     return this.stateService.timers$.pipe(
       map((timerStates) =>
-        timerStates.map(
+        timerStates
+        .filter(state => !state.stoppedAt)
+        .map(
           (state) =>
             new Timer({
               name: state.name,
@@ -47,4 +63,8 @@ export class DataService {
   }
 
   private storedTimers() {}
+  
+  private timerToUpdate() {
+
+  }
 }

@@ -1,5 +1,9 @@
 <ion-card [formGroup]="form">
-  <ion-card-header>{{ timer.name$ | async }}</ion-card-header>
+  <ion-card-header>{{ timer.name$ | async }}
+    
+    <ion-icon *ngIf="(timer.state$ | async) !== 'stopped'" name="close" style="float: right;" (click)="onStopTimerClicked(timer)"></ion-icon>
+
+  </ion-card-header>
 
   <ion-card-content>
     <ion-text *ngIf="timer.timer$ | async as duration">
