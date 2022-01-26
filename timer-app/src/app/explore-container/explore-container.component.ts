@@ -1,6 +1,6 @@
 import { Component, Input, OnInit } from '@angular/core';
 import { DateTime } from 'luxon';
-import { interval, Subject } from 'rxjs';
+import { Subject, timer } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { NotificationService } from '../services/notification.service';
 import { TimerService } from '../services/timer.service';
@@ -22,10 +22,10 @@ export class ExploreContainerComponent implements OnInit {
   ) {}
 
   ngOnInit() {
-    interval(100).subscribe((_) => this._time.next(DateTime.now()));
+    timer(0, 60 * 1000).subscribe((_) => this._time.next(DateTime.now()));
   }
 
-  timers$ = this.timerService.timers$
+  timers$ = this.timerService.timers$;
 
   startTimer() {
     this.notificationService.checkPermission();

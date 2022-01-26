@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { Storage } from '@ionic/storage-angular';
-import { BehaviorSubject, from, of, throwError } from 'rxjs';
+import { BehaviorSubject, from, Observable, throwError } from 'rxjs';
 import { filter, switchMap, take } from 'rxjs/operators';
 
 @Injectable({
@@ -21,7 +21,7 @@ export class StorageService {
     );
   }
 
-  get(key: string) {
+  get(key: string): Observable<any> {
     if (!this._storage) {
       return throwError('Storage is undefined');
     }
@@ -32,14 +32,14 @@ export class StorageService {
     );
   }
 
-  set(key: string, value: any) {
+  set(key: string, value: any): Observable<any> {
     if (!this._storage) {
       return throwError('Storage is undefined');
     }
 
-    // this seems to be the cause of typerror
-    from(this._storage.getValue().set(key, value)).pipe(
-      switchMap((_) => of(null))
+    return this._storage.pipe(
+      take(1),
+      switchMap((s) => s.set(key, value))
     );
   }
 

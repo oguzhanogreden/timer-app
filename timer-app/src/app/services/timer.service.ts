@@ -7,10 +7,9 @@ import { DataService } from './data.service';
   providedIn: 'root',
 })
 export class TimerService {
-  timers$ = this.dataService.loadTimers()
+  timers$ = this.dataService.loadTimers();
 
-  constructor(private dataService: DataService) {
-  }
+  constructor(private dataService: DataService) {}
 
   startNewTimer(): Timer {
     const timer = new Timer();
@@ -20,6 +19,9 @@ export class TimerService {
   }
 
   getTimer(t: Timer) {
-    return this.timers$.pipe(mergeAll(), filter((timer) => timer === t));
+    return this.timers$.pipe(
+      mergeAll(),
+      filter((timer) => timer === t)
+    );
   }
 }

@@ -11,13 +11,13 @@ import {
 import {
   distinctUntilChanged,
   filter,
+  first,
   map,
   scan,
   shareReplay,
   skip,
   startWith,
   switchMap,
-  take,
   tap
 } from 'rxjs/operators';
 import { v4 as uuidv4 } from 'uuid';
@@ -38,8 +38,6 @@ export class Timer {
 
   private _startedAt = new ReplaySubject<DateTime>(1);
   public startedAt$ = this._startedAt.pipe();
-
-  // private _alreadyElapsed = ;
 
   private _timerPrecision = of(1000);
   private _reminderAt = new Subject<Duration>();
@@ -77,9 +75,8 @@ export class Timer {
         return combineLatest([
           this._timerPrecision,
           this.startedAt$.pipe(
-            take(1),
-            map((s) => DateTime.now().toMillis() - s.toMillis()),
-            shareReplay(1)
+            first(),
+            map((s) => DateTime.now().toMillis() - s.toMillis())
           ),
         ]).pipe(
           tap((_) => this._state.next('ticking')),
@@ -91,7 +88,8 @@ export class Timer {
               map((_) => timerPrecision),
               startWith(alreadyElapsed) // Emit 0 to begin with
             )
-          )
+          ),
+          scan((passedMillis, tick) => passedMillis + tick, 0)
         );
       } else {
         return of('paused' as State).pipe(
@@ -100,7 +98,6 @@ export class Timer {
         );
       }
     }),
-    scan((passedMillis, tick) => passedMillis + tick, 0),
     map((passedMillis) => Duration.fromMillis(passedMillis)),
     shareReplay(1)
   );
@@ -144,9 +141,9 @@ export class Timer {
 
     this.startTimer();
   }
-  
+
   resumeTimer() {
-    this.startTimer()
+    this.startTimer();
   }
 
   stopTimer() {
@@ -156,5 +153,4 @@ export class Timer {
   private startTimer() {
     this._timerStarted.next();
   }
-
 }

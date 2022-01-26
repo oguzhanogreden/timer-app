@@ -1,11 +1,6 @@
 import { Injectable, OnDestroy } from '@angular/core';
 import { BehaviorSubject, throwError } from 'rxjs';
-import {
-  filter,
-  map,
-  mergeAll,
-  switchMap, toArray
-} from 'rxjs/operators';
+import { filter, map, mergeAll, switchMap, toArray } from 'rxjs/operators';
 import { StorageService } from './storage.service';
 
 export type TimerState = { id: string; name: string; startedAt: number };
@@ -48,17 +43,13 @@ export class StateService implements OnDestroy {
   private storeOnStateChange = () =>
     this._timers.pipe(
       mergeAll(),
-      switchMap((t) => {
-        console.log(t.name);
-        return this.storageService.set(t.id, t);
-      })
+      switchMap((t) => this.storageService.set(t.id, t))
     );
 
   addTimer(timer: TimerState) {
-    const timers = this._timers.getValue();
+    const timers = [...this._timers.getValue(), timer];
 
-    // TODO: Why is this throwing?
-    this._timers.next([...timers, timer]);
+    this._timers.next(timers);
   }
 
   modifyTimer(timerUpdate: TimerUpdate) {
