@@ -57,10 +57,8 @@ export class StateService implements OnDestroy {
   }
 
   modifyTimer(timerUpdate: TimerUpdate) {
-    // console.log(timerUpdate)
     const timers = this._timers.getValue();
 
-          console.log(timerUpdate)
     this._timers.next(
       timers.map((t) => {
         if (t.id === timerUpdate.id) {

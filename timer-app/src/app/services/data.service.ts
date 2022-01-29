@@ -44,23 +44,22 @@ export class DataService {
       switchMap(update => this.stateService.modifyTimer(update)), 
       filter(_ => false))
   }
-
-  loadTimers() {
-    return this.stateService.timers$.pipe(
+  
+  timers$ = this.stateService.timers$.pipe(
       map((timerStates) =>
         timerStates
-        .filter(state => !state.stoppedAt)
+        // .filter(state => !state.stoppedAt) // Here's why stopping works like deleting.
         .map(
           (state) =>
             new Timer({
               name: state.name,
               startedAtMilliseconds: state.startedAt,
+              stoppedAtMilliseconds: state.stoppedAt,
               id: state.id,
             })
         )
       )
     );
-  }
 
   private storedTimers() {}
   

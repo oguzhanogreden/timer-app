@@ -8,7 +8,7 @@ import { DataService } from './data.service';
   providedIn: 'root',
 })
 export class TimerService {
-  timers$ = this.dataService.loadTimers();
+  timers$ = this.dataService.timers$;
 
   constructor(private dataService: DataService) {}
 
@@ -18,10 +18,10 @@ export class TimerService {
     return this.dataService.addTimer(timer).pipe(filter(_ => false));
   }
   
-  stopTimer(t: Timer): Observable<any> {
-    t.stopTimer();
+  stopTimer(timer: Timer): Observable<any> {
+    timer.stopTimer();
     
-    return this.dataService.modifyTimer(t).pipe(filter(_ => false));
+    return this.dataService.modifyTimer(timer).pipe(filter(_ => false));
   }
 
   getTimer(t: Timer): Observable<Timer> {

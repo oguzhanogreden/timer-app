@@ -75,10 +75,10 @@ export class TimerComponent implements OnInit, AfterViewInit {
   onToggleButtonClick(timerState: State) {
     switch (timerState) {
       case 'ticking':
-        this.timer.pauseTimer();
+        this.onStopTimerClicked(this.timer);
         break;
-      case 'paused':
-        this.timer.resumeTimer();
+      case 'stopped':
+        // TODO: Restart a follow-up timer
         break;
     }
   }

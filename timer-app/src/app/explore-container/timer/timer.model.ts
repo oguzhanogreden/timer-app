@@ -1,7 +1,7 @@
 import { DateTime, Duration } from 'luxon';
 import {
   combineLatest,
-  merge, NEVER, Observable, of,
+  merge, Observable, of,
   ReplaySubject,
   Subject,
   timer
@@ -19,8 +19,8 @@ import {
 } from 'rxjs/operators';
 import { v4 as uuidv4 } from 'uuid';
 
-type Command = 'start' | 'pause' | 'stop';
-export type State = 'ticking' | 'paused' | 'stopped';
+type Command = 'start' | 'stop';
+export type State = 'ticking' | 'stopped';
 
 type TimerConfiguration = {
   // tickEveryMilliseconds: number,
@@ -59,30 +59,29 @@ export class Timer {
   );
 
   private _timerStarted = new Subject();
-  private _timerPaused = new Subject();
-  private _timerStopped = new Subject();
+  private _timerStopped = new Subject(); // would be nicer to consider this when stopped at comes, or the other way
 
   private _commands = merge(
     this._timerStarted.pipe(map((_) => 'start' as Command)),
-    this._timerPaused.pipe(map((_) => 'pause' as Command)),
-    this._timerStopped.pipe(map((_) => 'stop' as Command)),
+    // TODO: Consider if these events provide a good design?
+    merge([this._timerStopped, this._stoppedAt]).pipe(map((_) => 'stop' as Command)),
   ).pipe(shareReplay());
-  
+
   // _state = new Subject<State>();
   // state$ = this._state.pipe(shareReplay(1));
-  state$: Observable<State> = this._commands.pipe(map(command => {
-    switch (command) {
-      case 'pause':
-        return 'paused';
-      case 'start':
-        return 'ticking';
-      case 'stop':
-        return 'stopped'
-      default:
-        let exhausted: never = command;
-    }
-  }))
-  
+  state$: Observable<State> = this._commands.pipe(
+    map((command) => {
+      switch (command) {
+        case 'start':
+          return 'ticking';
+        case 'stop':
+          return 'stopped';
+        default:
+          let exhausted: never = command;
+      }
+    })
+  );
+
   onStartTimer() {
     return combineLatest([
       this._timerPrecision,
@@ -104,15 +103,24 @@ export class Timer {
       scan((passedMillis, tick) => passedMillis + tick, 0)
     );
   }
+  
+  onStopTimer() {
+    return combineLatest([
+      this.startedAt$,
+      this.stoppedAt$
+    ]).pipe(
+      map(([startedAt, stoppedAt]) => stoppedAt.minus(startedAt.toMillis())),
+      map(elapsed => elapsed.toMillis())
+    )
+  }
       
   timer$ = this._commands.pipe(
     switchMap(command => {
       switch (command) {
         case 'start':
           return this.onStartTimer();
-        case 'pause':
         case 'stop':
-          return NEVER;
+          return this.onStopTimer();
         default:
           const exhausted: never = command;
       }
@@ -147,7 +155,8 @@ export class Timer {
     id = uuidv4(),
     name = 'New timer',
     startedAtMilliseconds = DateTime.now().toMillis(), // DateTime.now().minus(Duration.fromObject({hour: 1})).toMillis()
-  }: { id?: string; name?: string; startedAtMilliseconds?: number } = {}) {
+    stoppedAtMilliseconds,
+  }: { id?: string; name?: string; startedAtMilliseconds?: number, stoppedAtMilliseconds?: number } = {}) {
     this._id.next(id);
     this._name.next(name);
     this._startedAt.next(DateTime.fromMillis(startedAtMilliseconds));
@@ -159,17 +168,14 @@ export class Timer {
     this.reminder$.subscribe();
     this.state$.subscribe();
 
-    this.startTimer();
+    if (stoppedAtMilliseconds) {
+      this._stoppedAt.next(DateTime.fromMillis(stoppedAtMilliseconds))
+      this._timerStopped.next();
+    } else {
+      this.startTimer();
+    }
   }
 
-  resumeTimer() {
-    this.startTimer();
-  }
-
-  pauseTimer(): void {
-    this._timerPaused.next();
-  }
-  
   stopTimer(): void {
     this._stoppedAt.next(DateTime.now());
     this._timerStopped.next();

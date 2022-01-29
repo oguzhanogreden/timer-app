@@ -75,7 +75,8 @@ export class NotificationService implements NotificationWrapper {
       )
       // TODO: Investigate - Notification() works differently for Chrome [= no sound] and Firefox [= sound]
       .subscribe((name) =>
-        this.notificationApi.notifyNow('Ping!', name).subscribe(() => {})
+        console.log("heres a notification for you")
+        // this.notificationApi.notifyNow('Ping!', name).subscribe(() => {})
       );
   }
 }
