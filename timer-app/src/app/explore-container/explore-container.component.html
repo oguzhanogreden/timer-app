@@ -10,7 +10,6 @@
   <!-- TODO: Style -->
   <div *ngIf="timers$ | async as timers">
     <div *ngFor="let timer of timers">
-      {{timer.timer$ | async}}
       <app-timer [timer]="timer"></app-timer>
     </div>
   </div>
