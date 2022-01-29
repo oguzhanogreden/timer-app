@@ -84,26 +84,26 @@ export class Timer {
   }))
   
   onStartTimer() {
-        return combineLatest([
-          this._timerPrecision,
-          this.startedAt$.pipe(
-            first(),
-            map((s) => DateTime.now().toMillis() - s.toMillis())
-          ),
-        ]).pipe(
-          // tap((_) => this._state.next('ticking')),
-          switchMap(([timerPrecision, alreadyElapsed]) =>
-            // TODO: Should ticks if e.g. startTime changes?
-            //       Does it matter if startTime changed 0.01 past the tick or tick-0.01 past it?
-            timer(0, timerPrecision).pipe(
-              skip(1), // Ignore first tick so that we can emit 0 to begin with
-              map((_) => timerPrecision),
-              startWith(alreadyElapsed) // Emit 0 to begin with
-            )
-          ),
-          scan((passedMillis, tick) => passedMillis + tick, 0)
-        );
-      }
+    return combineLatest([
+      this._timerPrecision,
+      this.startedAt$.pipe(
+        first(),
+        map((s) => DateTime.now().toMillis() - s.toMillis())
+      ),
+    ]).pipe(
+      // tap((_) => this._state.next('ticking')),
+      switchMap(([timerPrecision, alreadyElapsed]) =>
+        // TODO: Should ticks if e.g. startTime changes?
+        //       Does it matter if startTime changed 0.01 past the tick or tick-0.01 past it?
+        timer(0, timerPrecision).pipe(
+          skip(1), // Ignore first tick so that we can emit 0 to begin with
+          map((_) => timerPrecision),
+          startWith(alreadyElapsed) // Emit 0 to begin with
+        )
+      ),
+      scan((passedMillis, tick) => passedMillis + tick, 0)
+    );
+  }
       
   timer$ = this._commands.pipe(
     switchMap(command => {
