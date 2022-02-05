@@ -1,6 +1,6 @@
 <ion-card [formGroup]="form">
   <ion-card-header
-    >{{ timer.name$ | async }}
+    >{{ timer.name }}
 
     <ion-icon
       *ngIf="(timer.state$ | async) !== 'stopped'"

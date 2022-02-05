@@ -129,22 +129,47 @@ export class Timer {
     shareReplay(1)
   );
 
-  reminder$ = this._timerStarted.pipe(
-    switchMap((_) => this.config$),
-    map((config) => config.remindEveryMinutes),
-    switchMap((reminderAt, reminderIndex) => {
-      return this.timer$.pipe(
-        map((t) => Math.floor(t.toMillis() / reminderAt.toMillis())),
-        // If "reminder" changed, let the first value pass so that distinctUntilChanged will not filter `1`
-        filter((severity) => (reminderIndex === 0 ? severity > 0 : true)),
-        distinctUntilChanged(),
-        // If "reminder" changed, _ will be 0 when timerIndex===0, we'd like to pass:
-        filter((_, timerIndex) => {
-          return reminderIndex === 0 || (reminderIndex > 0 && timerIndex !== 0);
-        })
-      );
+  reminder$ = this._commands.pipe(
+    switchMap((command, reminderIndex) => {
+      let reminder: Observable<number>;
+      switch (command) {
+        case 'stop':
+          return NEVER;
+        case 'start':
+          reminder = this.timer$.pipe(
+            takeUntil(this._timerStopped),
+            map((t) => Math.floor(t.toMillis() / this.remindEveryMinutes.toMillis())),
+            // If "reminder" changed, let the first value pass so that distinctUntilChanged will not filter `1`
+            filter((severity) => (reminderIndex === 0 ? severity > 0 : true)),
+            distinctUntilChanged(),
+            // If "reminder" changed, _ will be 0 when timerIndex===0, we'd like to pass:
+            filter((_, timerIndex) => {
+              return reminderIndex === 0 || (reminderIndex > 0 && timerIndex !== 0);
+            }),
+          )
+          console.log(command)
+          return reminder;
+        case 'restore':
+          // TODO: DRY this!!!
+          reminder = this.timer$.pipe(
+            takeUntil(this._timerStopped),
+            map((t) => Math.floor(t.toMillis() / this.remindEveryMinutes.toMillis())),
+            // If "reminder" changed, let the first value pass so that distinctUntilChanged will not filter `1`
+            filter((severity) => (reminderIndex === 0 ? severity > 0 : true)),
+            distinctUntilChanged(),
+            // If "reminder" changed, _ will be 0 when timerIndex===0, we'd like to pass:
+            filter((_, timerIndex) => {
+              return reminderIndex === 0 || (reminderIndex > 0 && timerIndex !== 0);
+            }),
+            skip(1),
+          );
+          console.log(command)
+          return reminder;
+        default:
+          const e: never = command;
+          return NEVER;
+      }
     }),
-    shareReplay()
   );
 
   setRemindEveryMinutes(m: number) {
@@ -181,7 +206,9 @@ export class Timer {
     this._timerStopped.next();
   }
 
-  private startTimer() {
+  private startTimer(startedAt?: number) {
+    this.startedAt = startedAt ? DateTime.fromMillis(startedAt) : DateTime.now();
+
     this._timerStarted.next();
   }
 }
