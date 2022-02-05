@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject } from 'rxjs';
-import { map, take } from 'rxjs/operators';
+import { map, mergeAll, take, toArray } from 'rxjs/operators';
 import { Timer } from '../explore-container/timer/timer.model';
 import { StateService } from './state.service';
 
@@ -55,18 +55,16 @@ export class DataService {
   private readTimersFromStateOnConstruction() {
     return this.stateService.timers$.pipe(
       take(1),
-      // TODO: Denest using mergeAll()?
-      map((timerStates) =>
-      timerStates.map(timerState => 
-        new Timer({
+      mergeAll(),
+      map((timerState) => new Timer({
           name: timerState.name,
           startedAtMilliseconds: timerState.startedAt,
           stoppedAtMilliseconds: timerState.stoppedAt,
           id: timerState.id,
-        })
-      )
+        }),
+      ),
+      toArray()
     )
-    )  
   }
   
   private writeStoreToState(store: ServiceState) {
