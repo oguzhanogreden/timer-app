@@ -1,15 +1,27 @@
 import { Injectable } from '@angular/core';
-import { combineLatest, zip } from 'rxjs';
-import { filter, map, switchMap, tap } from 'rxjs/operators';
+import { BehaviorSubject } from 'rxjs';
+import { map, take } from 'rxjs/operators';
 import { Timer } from '../explore-container/timer/timer.model';
-import { StateService, TimerState, TimerUpdate } from './state.service';
+import { StateService } from './state.service';
+
+type ServiceState = {
+  timers: Timer[],
+}
+let _state: ServiceState = {
+  timers: [],
+}
+export type TimerDto = { id: string; name: string; startedAt: number; stoppedAt?: number, remindEveryMinutes: number };
 
 @Injectable({
   providedIn: 'root',
 })
 export class DataService {
-  constructor(private stateService: StateService) {}
-
+  _store = new BehaviorSubject<ServiceState>(_state);
+  storeUpdated$ = this._store.asObservable();
+  constructor(private stateService: StateService) {
+    this.storeUpdated$.subscribe({
+      next: store => this.writeStoreToState(store)
+    })
   // TODO: getTimer()
 
   addTimer(timer: Timer) {
@@ -65,5 +77,15 @@ export class DataService {
   
   private timerToUpdate() {
 
+  }
+
+  private writeStoreToState(store: ServiceState) {
+    this.stateService.storeTimers(store.timers.map(x => ({
+      id: x.id,
+      name: x.name,
+      remindEveryMinutes: x.remindEveryMinutes.toMillis() / (60**2),
+      startedAt: x.startedAt.toMillis(),
+      stoppedAt: x.stoppedAt?.toMillis(),
+    } as TimerDto)))
   }
 }

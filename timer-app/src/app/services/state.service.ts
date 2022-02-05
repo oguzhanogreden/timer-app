@@ -40,44 +40,10 @@ export class StateService implements OnDestroy {
       : throwError('RESTORE_ERROR' as StateServiceError);
   }
 
-  private storeOnStateChange = () =>
-    this._timers.pipe(
-      mergeAll(),
-      tap(_ => console.log(_)),
-      distinctUntilChanged((left, right) => left.stoppedAt == right.stoppedAt),
-      // tap(_ => console.log(_)),
-      switchMap((t) => this.storageService.set(t.id, t))
-    );
-
-  addTimer(timer: TimerState) {
-    const timers = [...this._timers.getValue(), timer];
-
-    this._timers.next(timers); // scan map potential for collecting objects
-    return this.timers$;
-  }
-
-  modifyTimer(timerUpdate: TimerUpdate) {
-    const timers = this._timers.getValue();
-
-    this._timers.next(
-      timers.map((t) => {
-        if (t.id === timerUpdate.id) {
-          console.log(t)
-          return { ...t, ...timerUpdate } as TimerState;
-        }
-        console.warn(`Timer with id can't be modified because it does not exist, you've passed: ${timerUpdate.id}`)
-
-        return t;
-      })
-    );
-    
-    return this.timers$;
-  }
-
-  deleteTimer(timer: TimerState) {
-    const timers = this._timers.getValue();
-
-    this._timers.next(timers.filter((t) => t.id !== timer.id));
+  storeTimers(timers: TimerDto[]) {
+    for (let timer of timers) {
+      this.storageService.set(timer.id, timer)
+    }
   }
 
   ngOnDestroy(): void {
