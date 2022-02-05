@@ -19,9 +19,16 @@ export class DataService {
   _store = new BehaviorSubject<ServiceState>(_state);
   storeUpdated$ = this._store.asObservable();
   constructor(private stateService: StateService) {
+    this.readTimersFromStateOnConstruction()
+      .subscribe(timers => {
+        _state = {..._state, timers: timers};
+        this._store.next(_state)
+      });
+    
     this.storeUpdated$.subscribe({
       next: store => this.writeStoreToState(store)
-    })
+    });
+  }
   // TODO: getTimer()
 
   addTimer(timer: Timer) {
@@ -57,22 +64,23 @@ export class DataService {
       filter(_ => false))
   }
   
-  timers$ = this.stateService.timers$.pipe(
+  private readTimersFromStateOnConstruction() {
+    return this.stateService.timers$.pipe(
+      take(1),
+      // TODO: Denest using mergeAll()?
       map((timerStates) =>
-        timerStates
-        // .filter(state => !state.stoppedAt) // Here's why stopping works like deleting.
-        .map(
-          (state) =>
-            new Timer({
-              name: state.name,
-              startedAtMilliseconds: state.startedAt,
-              stoppedAtMilliseconds: state.stoppedAt,
-              id: state.id,
-            })
-        )
+      timerStates.map(timerState => 
+        new Timer({
+          name: timerState.name,
+          startedAtMilliseconds: timerState.startedAt,
+          stoppedAtMilliseconds: timerState.stoppedAt,
+          id: timerState.id,
+        })
       )
-    );
-
+    )
+    )  
+  }
+  
   private storedTimers() {}
   
   private timerToUpdate() {
