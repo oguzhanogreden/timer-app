@@ -1,8 +1,7 @@
 import { Injectable } from '@angular/core';
 import { ToastController } from '@ionic/angular';
-import { Observable, of, Subject } from 'rxjs';
-import { filter, mergeMap, shareReplay, switchMap, tap } from 'rxjs/operators';
-import { Timer } from '../explore-container/timer/timer.model';
+import { of, Subject } from 'rxjs';
+import { filter, map, mergeAll, mergeMap, shareReplay, switchMap } from 'rxjs/operators';
 import { apiFactory, NotificationApi } from './native/api';
 import { TimerService } from './timer.service';
 
@@ -17,14 +16,12 @@ export class NotificationService implements NotificationWrapper {
   _allowed = new Subject<boolean>();
   allowed$ = this._allowed.pipe(shareReplay(1));
 
-  timers$: Observable<Timer>;
+  timers$ = this.timerService.timers$;
 
   constructor(
     private toastController: ToastController,
     private timerService: TimerService
   ) {
-    this.timers$ = timerService.timers$;
-
     this.checkPermission();
     this.handleNotificationsNotAllowed();
     this.handleTimerNotifications();
@@ -57,6 +54,7 @@ export class NotificationService implements NotificationWrapper {
   private handleNotificationsNotAllowed() {
     this.timers$
       .pipe(
+        mergeAll(),
         mergeMap((t) => t.state$.pipe(filter((x) => x === 'ticking'))),
         switchMap((s) => of(null))
       )
@@ -69,10 +67,9 @@ export class NotificationService implements NotificationWrapper {
         filter((allowed) => allowed),
         switchMap((_) =>
           this.timers$.pipe(
-            mergeMap((t) => t.reminder$.pipe(switchMap((_) => t.name$)))
-          )
+            mergeAll(),
+            mergeMap((t) => t.reminder$.pipe(map((_) => t.name))))
         ),
-        tap(console.log),
       )
       // TODO: Investigate - Notification() works differently for Chrome [= no sound] and Firefox [= sound]
       .subscribe((name) =>

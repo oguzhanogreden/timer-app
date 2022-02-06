@@ -1,28 +1,33 @@
 import { Injectable } from '@angular/core';
-import { ReplaySubject } from 'rxjs';
-import { filter } from 'rxjs/operators';
+import { Observable } from 'rxjs';
+import { filter, mergeAll } from 'rxjs/operators';
 import { Timer } from '../explore-container/timer/timer.model';
+import { DataService } from './data.service';
 
 @Injectable({
   providedIn: 'root',
 })
 export class TimerService {
-  private _timers = new ReplaySubject<Timer>();
-  timers$ = this._timers.pipe();
+  timers$ = this.dataService.timers$;
 
-  constructor() {}
+  constructor(private dataService: DataService) {}
 
-  startTimer(): Timer {
+  startNewTimer(): void {
     const timer = new Timer();
 
-    this._timers.next(timer);
-
-    timer.startTimer();
-
-    return timer;
+    this.dataService.addTimer(timer);
+  }
+  
+  stopTimer(timer: Timer): void {
+    timer.stopTimer();
+    
+    this.dataService.modifyTimer(timer);
   }
 
-  getTimer(t: Timer) {
-    return this._timers.pipe(filter((timer) => timer === t));
+  getTimer(t: Timer): Observable<Timer> {
+    return this.timers$.pipe(
+      mergeAll(),
+      filter((timer) => timer === t)
+    );
   }
 }

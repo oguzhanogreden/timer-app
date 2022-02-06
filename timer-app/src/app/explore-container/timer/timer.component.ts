@@ -10,8 +10,15 @@ import {
 } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Duration } from 'luxon';
+import { of } from 'rxjs';
 import { debounceTime, distinctUntilChanged, filter, map, take, tap } from 'rxjs/operators';
-import { Timer, TimerState } from './timer.model';
+import { TimerService } from 'src/app/services/timer.service';
+import { State, Timer } from './timer.model';
+
+type FormValue = {
+  remindEveryMinutes: number;
+};
+
 
 type FormValue = {
   remindEveryMinutes: number;
@@ -31,27 +38,28 @@ export class TimerComponent implements OnInit, AfterViewInit {
 
   form: FormGroup;
 
-  constructor(private formBuilder: FormBuilder) {}
+  constructor(private formBuilder: FormBuilder, private timerService: TimerService) {}
 
   ngOnInit() {
     this.form = this.formBuilder.group({
       remindEveryMinutes: this.formBuilder.control(null, [Validators.min(1)]),
     });
 
-    this.timer.config$
+    of(this.timer.remindEveryMinutes)
       .pipe(
-        map((config) => config.remindEveryMinutes.toMillis() / (1000 * 60)),
+        map((remindEveryMinutes) => remindEveryMinutes.toMillis() / (1000 * 60)),
         take(1)
       )
       .subscribe((remindEveryMinutes) =>
         this.form.setValue({ remindEveryMinutes } as FormValue)
       );
 
-    this.form.get('remindEveryMinutes').valueChanges
+    this.form.get('remindEveryMinutes')?.valueChanges
       .pipe(
         debounceTime(200),
         // TODO: Smelly?
-        filter(_ => this.form.get('remindEveryMinutes').valid),
+        filter(_ => this.form.get('remindEveryMinutes')?.valid ?? false),
+
         distinctUntilChanged(),
       )
       .subscribe({
@@ -66,14 +74,18 @@ export class TimerComponent implements OnInit, AfterViewInit {
   }
 
   ngAfterViewInit(): void {}
+  
+  onStopTimerClicked(timer: Timer) {
+    this.timerService.stopTimer(timer);
+  }
 
-  onToggleButtonClick(timerState: TimerState) {
+  onToggleButtonClick(timerState: State) {
     switch (timerState) {
       case 'ticking':
-        this.timer.stopTimer();
+        this.onStopTimerClicked(this.timer);
         break;
-      case 'paused':
-        this.timer.startTimer();
+      case 'stopped':
+        // TODO: Restart a follow-up timer
         break;
     }
   }
