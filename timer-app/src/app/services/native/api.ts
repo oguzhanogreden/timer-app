@@ -2,7 +2,7 @@
 import { PermissionState } from '@capacitor/core';
 import {
   LocalNotifications,
-  ScheduleOptions,
+  ScheduleOptions
 } from '@capacitor/local-notifications';
 import { from, Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
@@ -46,7 +46,7 @@ const notify: NotifyApi = (body: string, title: string) => {
         title: title,
         id: new Date().getTime() + Math.floor(Math.random() * 10),
         summaryText: body,
-        sound: null,
+        sound: undefined,
         // schedule: {
         //   // at: new Date(Date.now() + 1),
         // },

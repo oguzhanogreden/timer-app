@@ -47,8 +47,6 @@ export class DataService {
 
     _state = {..._state, timers: _timers}
     
-    console.log(_state);
-
     this._store.next(_state);
   }
 

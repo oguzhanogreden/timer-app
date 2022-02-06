@@ -29,7 +29,7 @@ export class ExploreContainerComponent implements OnInit {
 
   startTimer() {
     this.notificationService.checkPermission()
-    this.timerService.startNewTimer().subscribe()
+    this.timerService.startNewTimer()
     
     return;
   }

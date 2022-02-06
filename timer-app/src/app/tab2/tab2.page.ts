@@ -17,7 +17,6 @@ import {
 export class Tab2Page {
   _routeData = this.route.data.pipe(
     map((data) => data as Tab2Data)
-    // tap((x) => console.log(x))
   );
   _onboarding = this._routeData.pipe(map((data) => data.onboarding));
   _user: Observable<User>;

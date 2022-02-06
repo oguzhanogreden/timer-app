@@ -12,16 +12,16 @@ export class TimerService {
 
   constructor(private dataService: DataService) {}
 
-  startNewTimer(): Observable<any> {
+  startNewTimer(): void {
     const timer = new Timer();
 
-    return this.dataService.addTimer(timer).pipe(filter(_ => false));
+    this.dataService.addTimer(timer);
   }
   
-  stopTimer(timer: Timer): Observable<any> {
+  stopTimer(timer: Timer): void {
     timer.stopTimer();
     
-    return this.dataService.modifyTimer(timer).pipe(filter(_ => false));
+    this.dataService.modifyTimer(timer);
   }
 
   getTimer(t: Timer): Observable<Timer> {

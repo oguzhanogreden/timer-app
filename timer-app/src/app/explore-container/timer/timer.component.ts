@@ -10,6 +10,7 @@ import {
 } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Duration } from 'luxon';
+import { of } from 'rxjs';
 import { debounceTime, distinctUntilChanged, filter, map, take, tap } from 'rxjs/operators';
 import { TimerService } from 'src/app/services/timer.service';
 import { State, Timer } from './timer.model';
@@ -39,20 +40,20 @@ export class TimerComponent implements OnInit, AfterViewInit {
       remindEveryMinutes: this.formBuilder.control(null, [Validators.min(1)]),
     });
 
-    this.timer.config$
+    of(this.timer.remindEveryMinutes)
       .pipe(
-        map((config) => config.remindEveryMinutes.toMillis() / (1000 * 60)),
+        map((remindEveryMinutes) => remindEveryMinutes.toMillis() / (1000 * 60)),
         take(1)
       )
       .subscribe((remindEveryMinutes) =>
         this.form.setValue({ remindEveryMinutes } as FormValue)
       );
 
-    this.form.get('remindEveryMinutes').valueChanges
+    this.form.get('remindEveryMinutes')?.valueChanges
       .pipe(
         debounceTime(200),
         // TODO: Smelly?
-        filter(_ => this.form.get('remindEveryMinutes').valid),
+        filter(_ => this.form.get('remindEveryMinutes')?.valid ?? false),
         distinctUntilChanged(),
       )
       .subscribe({
@@ -69,7 +70,7 @@ export class TimerComponent implements OnInit, AfterViewInit {
   ngAfterViewInit(): void {}
   
   onStopTimerClicked(timer: Timer) {
-    this.timerService.stopTimer(timer).subscribe();
+    this.timerService.stopTimer(timer);
   }
 
   onToggleButtonClick(timerState: State) {

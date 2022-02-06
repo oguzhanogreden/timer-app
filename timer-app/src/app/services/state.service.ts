@@ -36,7 +36,6 @@ export class StateService {
   }
 
   private restoreTimersFromStorage() {
-    this.getStoredTimerStates().then(_ => console.log(_));
     return this._timers.getValue().length === 0
       ? this.getStoredTimerStates()
       : throwError('RESTORE_ERROR' as StateServiceError);

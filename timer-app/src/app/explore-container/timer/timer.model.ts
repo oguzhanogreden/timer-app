@@ -1,71 +1,46 @@
 import { DateTime, Duration } from 'luxon';
 import {
-  combineLatest,
-  merge, Observable, of,
-  ReplaySubject,
-  Subject,
+  merge, NEVER, Observable, of, ReplaySubject, Subject,
   timer
 } from 'rxjs';
 import {
   distinctUntilChanged,
-  filter,
-  first,
-  map,
+  filter, map,
   scan,
   shareReplay,
   skip,
   startWith,
-  switchMap
+  switchMap,
+  takeUntil
 } from 'rxjs/operators';
 import { v4 as uuidv4 } from 'uuid';
 
-type Command = 'start' | 'stop';
+	type Command = 'start' | 'stop' | 'restore';
 export type State = 'ticking' | 'stopped';
-
-type TimerConfiguration = {
-  // tickEveryMilliseconds: number,
-  remindEveryMinutes: Duration;
-  // name: string
-};
 
 const DEFAULT_REMINDER = Duration.fromObject({ minutes: 5 });
 
 export class Timer {
-  private _id = new ReplaySubject<string>(1);
-  id$ = this._id.asObservable();
+  readonly id: string;
+  startedAt: DateTime;
+  stoppedAt: DateTime | null;
+  name: string;
+  // TODO: Refactor - decide where the representation changes from Duration to number
+  remindEveryMinutes = DEFAULT_REMINDER
 
-  private _startedAt = new ReplaySubject<DateTime>(1);
-  public startedAt$ = this._startedAt.pipe();
-  
-  private _stoppedAt = new ReplaySubject<DateTime | null>(1);
-  public stoppedAt$ = this._stoppedAt.pipe();
-
-  private _timerPrecision = of(1000);
+  private _timerPrecision = 1000;
   private _reminderAt = new Subject<Duration>();
-  private _name = new ReplaySubject<string>(1);
-  name$ = this._name.pipe();
-
-  config$ = combineLatest([
-    this._reminderAt.pipe(startWith(DEFAULT_REMINDER)),
-  ]).pipe(
-    map(
-      ([remindEveryMinutes]) =>
-        ({
-          remindEveryMinutes,
-        } as TimerConfiguration)
-    ),
-    distinctUntilChanged(),
-    shareReplay(1)
-  );
-
   private _timerStarted = new Subject();
   private _timerStopped = new Subject(); // would be nicer to consider this when stopped at comes, or the other way
+  private _timerRestored = new ReplaySubject<null>(1);
+  private timerRestored$ = this._timerRestored.pipe(takeUntil(this._timerStarted));
 
+  // TODO: Consider if these events provide a good design?
   private _commands = merge(
     this._timerStarted.pipe(map((_) => 'start' as Command)),
-    // TODO: Consider if these events provide a good design?
-    merge([this._timerStopped, this._stoppedAt]).pipe(map((_) => 'stop' as Command)),
-  ).pipe(shareReplay());
+    this.timerRestored$.pipe(map((_) => 'restore' as Command)),
+    this._timerStopped.pipe(map((_) => 'stop' as Command))
+  ).pipe(shareReplay(1));
 
   // _state = new Subject<State>();
   // state$ = this._state.pipe(shareReplay(1));
@@ -73,62 +48,57 @@ export class Timer {
     map((command) => {
       switch (command) {
         case 'start':
-          return 'ticking';
+        case 'restore':
+          return 'ticking' as State;
         case 'stop':
-          return 'stopped';
+          return 'stopped' as State;
         default:
           let exhausted: never = command;
+          throw "Not exhausted";
       }
     })
   );
 
   onStartTimer() {
-    return combineLatest([
-      this._timerPrecision,
-      this.startedAt$.pipe(
-        first(),
-        map((s) => DateTime.now().toMillis() - s.toMillis())
-      ),
-    ]).pipe(
-      // tap((_) => this._state.next('ticking')),
-      switchMap(([timerPrecision, alreadyElapsed]) =>
-        // TODO: Should ticks if e.g. startTime changes?
-        //       Does it matter if startTime changed 0.01 past the tick or tick-0.01 past it?
-        timer(0, timerPrecision).pipe(
-          skip(1), // Ignore first tick so that we can emit 0 to begin with
-          map((_) => timerPrecision),
-          startWith(alreadyElapsed) // Emit 0 to begin with
-        )
-      ),
-      scan((passedMillis, tick) => passedMillis + tick, 0)
+    const alreadyElapsed = DateTime.now().toMillis() - this.startedAt.toMillis();
+
+    // TODO: Should ticks if e.g. startTime changes?
+    //       Does it matter if startTime changed 0.01 past the tick or tick-0.01 past it?
+    return timer(0, this._timerPrecision).pipe(
+      skip(1), // Ignore first tick so that we can emit 0 to begin with
+      map((_) => this._timerPrecision),
+      startWith(alreadyElapsed) ,
+      scan((passedMillis, tick) => passedMillis + tick * 50, 0)
     );
   }
   
   onStopTimer() {
-    return combineLatest([
-      this.startedAt$,
-      this.stoppedAt$
-    ]).pipe(
-      map(([startedAt, stoppedAt]) => stoppedAt.minus(startedAt.toMillis())),
-      map(elapsed => elapsed.toMillis())
-    )
+    if (this.stoppedAt === null) {
+      this.stoppedAt = DateTime.now();
+    }
+    const elapsed = this.stoppedAt.minus(this.startedAt.toMillis())
+    
+    return of(elapsed.toMillis());
   }
       
   timer$ = this._commands.pipe(
     switchMap(command => {
       switch (command) {
         case 'start':
+        case 'restore':
           return this.onStartTimer();
         case 'stop':
           return this.onStopTimer();
         default:
           const exhausted: never = command;
+          throw "not exhausted";
       }
     }),
     map((passedMillis) => Duration.fromMillis(passedMillis)),
     shareReplay(1)
   );
 
+  // TODO: Extract to timer factory
   reminder$ = this._commands.pipe(
     switchMap((command, reminderIndex) => {
       let reminder: Observable<number>;
@@ -147,7 +117,6 @@ export class Timer {
               return reminderIndex === 0 || (reminderIndex > 0 && timerIndex !== 0);
             }),
           )
-          console.log(command)
           return reminder;
         case 'restore':
           // TODO: DRY this!!!
@@ -179,36 +148,40 @@ export class Timer {
   constructor({
     id = uuidv4(),
     name = 'New timer',
-    startedAtMilliseconds = DateTime.now().toMillis(), // DateTime.now().minus(Duration.fromObject({hour: 1})).toMillis()
+    startedAtMilliseconds, // DateTime.now().minus(Duration.fromObject({hour: 1})).toMillis()
     stoppedAtMilliseconds,
   }: { id?: string; name?: string; startedAtMilliseconds?: number, stoppedAtMilliseconds?: number } = {}) {
-    this._id.next(id);
-    this._name.next(name);
-    this._startedAt.next(DateTime.fromMillis(startedAtMilliseconds));
-    this._stoppedAt.subscribe();
+    this.id = id;
+    this.name = name;
 
     // TODO: Smelly
     this._commands.subscribe();
+    this.startTimer(startedAtMilliseconds); // Smelly - where this is placed matters too much! Try moving it one row above
     this.timer$.subscribe();
     this.reminder$.subscribe();
     this.state$.subscribe();
 
     if (stoppedAtMilliseconds) {
-      this._stoppedAt.next(DateTime.fromMillis(stoppedAtMilliseconds))
+      this.stoppedAt = DateTime.fromMillis(stoppedAtMilliseconds)
       this._timerStopped.next();
-    } else {
-      this.startTimer();
     }
   }
 
   stopTimer(): void {
-    this._stoppedAt.next(DateTime.now());
+    this.stoppedAt = DateTime.now();
     this._timerStopped.next();
   }
 
   private startTimer(startedAt?: number) {
-    this.startedAt = startedAt ? DateTime.fromMillis(startedAt) : DateTime.now();
+    if (startedAt) {
+      this.startedAt = DateTime.fromMillis(startedAt); 
+      this._timerRestored.next();
+      this._timerRestored.complete();
 
+      return;
+    }
+
+    this.startedAt = DateTime.now(); 
     this._timerStarted.next();
   }
 }

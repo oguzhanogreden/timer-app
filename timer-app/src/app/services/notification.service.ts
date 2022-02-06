@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { ToastController } from '@ionic/angular';
 import { of, Subject } from 'rxjs';
-import { filter, mergeAll, mergeMap, shareReplay, switchMap, tap } from 'rxjs/operators';
+import { filter, map, mergeAll, mergeMap, shareReplay, switchMap } from 'rxjs/operators';
 import { apiFactory, NotificationApi } from './native/api';
 import { TimerService } from './timer.service';
 
@@ -68,15 +68,12 @@ export class NotificationService implements NotificationWrapper {
         switchMap((_) =>
           this.timers$.pipe(
             mergeAll(),
-            mergeMap((t) => t.reminder$.pipe(switchMap((_) => t.name$)))
-          )
+            mergeMap((t) => t.reminder$.pipe(map((_) => t.name))))
         ),
-        tap(console.log),
       )
       // TODO: Investigate - Notification() works differently for Chrome [= no sound] and Firefox [= sound]
       .subscribe((name) =>
-        console.log("heres a notification for you")
-        // this.notificationApi.notifyNow('Ping!', name).subscribe(() => {})
+        this.notificationApi.notifyNow('Ping!', name).subscribe(() => {})
       );
   }
 }
