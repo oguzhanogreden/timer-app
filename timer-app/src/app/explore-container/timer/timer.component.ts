@@ -19,11 +19,6 @@ type FormValue = {
   remindEveryMinutes: number;
 };
 
-
-type FormValue = {
-  remindEveryMinutes: number;
-};
-
 @Component({
   selector: 'app-timer',
   templateUrl: './timer.component.html',
