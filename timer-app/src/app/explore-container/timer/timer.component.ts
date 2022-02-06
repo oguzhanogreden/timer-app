@@ -6,7 +6,7 @@ import {
   OnInit,
   Output,
   Pipe,
-  PipeTransform,
+  PipeTransform
 } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Duration } from 'luxon';
@@ -59,7 +59,7 @@ export class TimerComponent implements OnInit, AfterViewInit {
       )
       .subscribe({
         next: (remindEveryMinutes) =>
-          this.timer.setRemindEveryMinutes(remindEveryMinutes),
+        this.timerService.changeReminderFrequency(this.timer, remindEveryMinutes)
       });
 
     this.timer.reminder$.pipe(tap((_) => this.reminder.emit())).subscribe({

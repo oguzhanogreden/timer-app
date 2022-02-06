@@ -18,6 +18,15 @@ export class TimerService {
     this.dataService.addTimer(timer);
   }
   
+  // TODO: Reconcile "subjecting state to good beh." & "facades talk"
+  //       1. TimerService could become TimerFacade (and go immutable)
+  //       2. Would we then still want DataService to exist to support e.g. optimistic updates?
+  changeReminderFrequency(timer: Timer, frequencyInMinutes: number) {
+    timer.setRemindEveryMinutes(frequencyInMinutes);
+    
+    this.dataService.modifyTimer(timer);
+  }
+  
   stopTimer(timer: Timer): void {
     timer.stopTimer();
     

@@ -18,7 +18,7 @@ import { v4 as uuidv4 } from 'uuid';
 	type Command = 'start' | 'stop' | 'restore';
 export type State = 'ticking' | 'stopped';
 
-const DEFAULT_REMINDER = Duration.fromObject({ minutes: 5 });
+const DEFAULT_REMINDER = 5;
 
 export class Timer {
   readonly id: string;
@@ -26,7 +26,7 @@ export class Timer {
   stoppedAt: DateTime | null;
   name: string;
   // TODO: Refactor - decide where the representation changes from Duration to number
-  remindEveryMinutes = DEFAULT_REMINDER
+  remindEveryMinutes: Duration;
 
   private _timerPrecision = 1000;
   private _reminderAt = new Subject<Duration>();
@@ -69,7 +69,7 @@ export class Timer {
       skip(1), // Ignore first tick so that we can emit 0 to begin with
       map((_) => this._timerPrecision),
       startWith(alreadyElapsed) ,
-      scan((passedMillis, tick) => passedMillis + tick * 50, 0)
+      scan((passedMillis, tick) => passedMillis + tick , 0)
     );
   }
   
@@ -133,7 +133,6 @@ export class Timer {
             }),
             skip(1),
           );
-          console.log(command)
           return reminder;
         default:
           const e: never = command;
@@ -143,7 +142,7 @@ export class Timer {
   );
 
   setRemindEveryMinutes(m: number) {
-    this._reminderAt.next(Duration.fromObject({ minutes: m }));
+    this.remindEveryMinutes = Duration.fromObject({ minutes: m });
   }
 
   constructor({
@@ -151,9 +150,11 @@ export class Timer {
     name = 'New timer',
     startedAtMilliseconds, // DateTime.now().minus(Duration.fromObject({hour: 1})).toMillis()
     stoppedAtMilliseconds,
-  }: { id?: string; name?: string; startedAtMilliseconds?: number, stoppedAtMilliseconds?: number } = {}) {
+    remindEveryMinutes,
+  }: { id?: string; name?: string; startedAtMilliseconds?: number, stoppedAtMilliseconds?: number, remindEveryMinutes?: number} = {}) {
     this.id = id;
     this.name = name;
+    this.setRemindEveryMinutes(remindEveryMinutes ?? DEFAULT_REMINDER);
 
     // TODO: Smelly
     this._commands.subscribe();
