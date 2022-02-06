@@ -20,14 +20,6 @@ export type State = 'ticking' | 'stopped';
 
 const DEFAULT_REMINDER = Duration.fromObject({ minutes: 5 });
 
-type TimerConfiguration = {
-  // tickEveryMilliseconds: number,
-  remindEveryMinutes: Duration;
-  // name: string
-};
-
-const DEFAULT_REMINDER = Duration.fromObject({ minutes: 5 });
-
 export class Timer {
   readonly id: string;
   startedAt: DateTime;
