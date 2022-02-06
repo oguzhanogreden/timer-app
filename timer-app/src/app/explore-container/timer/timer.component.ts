@@ -6,7 +6,7 @@ import {
   OnInit,
   Output,
   Pipe,
-  PipeTransform
+  PipeTransform,
 } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Duration } from 'luxon';
@@ -14,6 +14,11 @@ import { of } from 'rxjs';
 import { debounceTime, distinctUntilChanged, filter, map, take, tap } from 'rxjs/operators';
 import { TimerService } from 'src/app/services/timer.service';
 import { State, Timer } from './timer.model';
+
+type FormValue = {
+  remindEveryMinutes: number;
+};
+
 
 type FormValue = {
   remindEveryMinutes: number;
@@ -54,6 +59,7 @@ export class TimerComponent implements OnInit, AfterViewInit {
         debounceTime(200),
         // TODO: Smelly?
         filter(_ => this.form.get('remindEveryMinutes')?.valid ?? false),
+
         distinctUntilChanged(),
       )
       .subscribe({

@@ -16,7 +16,7 @@
         {{ duration.toFormat("mm:ss") }}
       </h1>
     </ion-text>
-
+    
     <ng-container *ngIf="timer.state$ | async as timerState">
       <div *ngIf="timerState === 'ticking'; else stopped">
         <button>

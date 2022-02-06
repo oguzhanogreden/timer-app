@@ -20,6 +20,14 @@ export type State = 'ticking' | 'stopped';
 
 const DEFAULT_REMINDER = Duration.fromObject({ minutes: 5 });
 
+type TimerConfiguration = {
+  // tickEveryMilliseconds: number,
+  remindEveryMinutes: Duration;
+  // name: string
+};
+
+const DEFAULT_REMINDER = Duration.fromObject({ minutes: 5 });
+
 export class Timer {
   readonly id: string;
   startedAt: DateTime;
@@ -30,6 +38,7 @@ export class Timer {
 
   private _timerPrecision = 1000;
   private _reminderAt = new Subject<Duration>();
+
   private _timerStarted = new Subject();
   private _timerStopped = new Subject(); // would be nicer to consider this when stopped at comes, or the other way
   private _timerRestored = new ReplaySubject<null>(1);
