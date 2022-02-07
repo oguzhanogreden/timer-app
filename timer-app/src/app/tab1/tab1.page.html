@@ -6,12 +6,27 @@
   </ion-toolbar>
 </ion-header>
 
-<ion-content [fullscreen]="true">
+<ion-content>
   <ion-header collapse="condense">
     <ion-toolbar>
       <ion-title size="large">Tab 1</ion-title>
     </ion-toolbar>
   </ion-header>
 
-  <app-explore-container name="Tab 1 page"></app-explore-container>
+  <div>
+    <ion-text *ngIf="time$ | async as time">
+      <h1>
+        {{ time }}
+      </h1>
+    </ion-text>
+
+    <ion-button (click)="startTimer()" *ngIf="true"> Start timer </ion-button>
+
+    <!-- TODO: Style -->
+    <div *ngIf="timers$ | async as timers">
+      <div *ngFor="let timer of timers">
+        <app-timer [timer]="timer"></app-timer>
+      </div>
+    </div>
+  </div>
 </ion-content>

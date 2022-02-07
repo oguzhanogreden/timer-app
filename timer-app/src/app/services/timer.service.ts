@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { filter, mergeAll } from 'rxjs/operators';
-import { Timer } from '../explore-container/timer/timer.model';
+import { Timer } from '../tab1/timer/timer.model';
 import { DataService } from './data.service';
 
 @Injectable({

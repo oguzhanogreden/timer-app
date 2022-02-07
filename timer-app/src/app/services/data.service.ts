@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject } from 'rxjs';
 import { map, mergeAll, take, toArray } from 'rxjs/operators';
-import { Timer } from '../explore-container/timer/timer.model';
+import { Timer } from '../tab1/timer/timer.model';
 import { StateService } from './state.service';
 
 type ServiceState = {
