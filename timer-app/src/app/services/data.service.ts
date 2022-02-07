@@ -59,6 +59,7 @@ export class DataService {
           startedAtMilliseconds: timerState.startedAt,
           stoppedAtMilliseconds: timerState.stoppedAt,
           id: timerState.id,
+          remindEveryMinutes: timerState.remindEveryMinutes,
         }),
       ),
       toArray()
@@ -69,7 +70,7 @@ export class DataService {
     this.stateService.storeTimers(store.timers.map(x => ({
       id: x.id,
       name: x.name,
-      remindEveryMinutes: x.remindEveryMinutes.toMillis() / (60**2),
+      remindEveryMinutes: x.remindEveryMinutes.toMillis() / (1000 * 60),
       startedAt: x.startedAt.toMillis(),
       stoppedAt: x.stoppedAt?.toMillis(),
     } as TimerDto)))
