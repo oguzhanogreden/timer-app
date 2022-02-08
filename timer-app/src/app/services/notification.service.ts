@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { ToastController } from '@ionic/angular';
-import { of, Subject } from 'rxjs';
+import { Observable, of, Subject } from 'rxjs';
 import { filter, map, mergeAll, mergeMap, shareReplay, switchMap } from 'rxjs/operators';
 import { apiFactory, NotificationApi } from './native/api';
 import { TimerService } from './timer.service';
@@ -33,6 +33,12 @@ export class NotificationService implements NotificationWrapper {
     this.notificationApi.checkPermission().subscribe({
       next: (allowed) => this._allowed.next(allowed),
     });
+  }
+  
+  requestPermission(): Observable<null> {
+    return this.notificationApi.requestPermission().pipe(
+      map(_ => null)
+    )
   }
 
   private async displayNotificationNotAllowedToast() {
