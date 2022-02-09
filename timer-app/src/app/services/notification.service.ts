@@ -67,19 +67,7 @@ export class NotificationService implements NotificationWrapper {
       .subscribe((_) => this.displayNotificationNotAllowedToast());
   }
 
-  private handleTimerNotifications() {
-    this.allowed$
-      .pipe(
-        filter((allowed) => allowed),
-        switchMap((_) =>
-          this.timers$.pipe(
-            mergeAll(),
-            mergeMap((t) => t.reminder$.pipe(map((_) => t.name))))
-        ),
-      )
-      // TODO: Investigate - Notification() works differently for Chrome [= no sound] and Firefox [= sound]
-      .subscribe((name) =>
-        this.notificationApi.notifyNow('Ping!', name).subscribe(() => {})
-      );
+  public notifyUser(timerName: string) {
+    this.notificationApi.notifyNow('Ping!', timerName).subscribe(() => {});
   }
 }
