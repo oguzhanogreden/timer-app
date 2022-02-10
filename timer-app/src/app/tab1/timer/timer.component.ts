@@ -1,17 +1,14 @@
 import {
   AfterViewInit,
-  Component,
-  EventEmitter,
-  Input,
-  OnInit,
-  Output,
-  Pipe,
+  Component, Input,
+  OnInit, Pipe,
   PipeTransform
 } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Duration } from 'luxon';
 import { of } from 'rxjs';
-import { debounceTime, distinctUntilChanged, filter, map, take, tap } from 'rxjs/operators';
+import { debounceTime, distinctUntilChanged, filter, map, take } from 'rxjs/operators';
+import { NotificationService } from 'src/app/services/notification.service';
 import { TimerService } from 'src/app/services/timer.service';
 import { State, Timer } from './timer.model';
 
@@ -28,12 +25,10 @@ export class TimerComponent implements OnInit, AfterViewInit {
   @Input()
   timer: Timer;
 
-  @Output()
-  reminder = new EventEmitter<null>();
-
   form: FormGroup;
 
-  constructor(private formBuilder: FormBuilder, private timerService: TimerService) {}
+  constructor(private formBuilder: FormBuilder, private timerService: TimerService, private notificationService: NotificationService) {
+  }
 
   ngOnInit() {
     this.form = this.formBuilder.group({
@@ -62,8 +57,8 @@ export class TimerComponent implements OnInit, AfterViewInit {
         this.timerService.changeReminderFrequency(this.timer, remindEveryMinutes)
       });
 
-    this.timer.reminder$.pipe(tap((_) => this.reminder.emit())).subscribe({
-      // next: (x) => console.log(x),
+    this.timer.reminder$.subscribe({
+      next: reminder => this.notificationService.notifyUser(this.timer.name),
       error: console.error,
     });
   }

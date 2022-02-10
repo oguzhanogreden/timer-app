@@ -13,20 +13,23 @@
     </ion-toolbar>
   </ion-header>
 
-  <div>
-    <ion-text *ngIf="time$ | async as time">
-      <h1>
-        {{ time }}
-      </h1>
-    </ion-text>
+  <ion-grid >
+    <ion-row class="ion-padding">
+      <ion-col>
+        <ion-text *ngIf="time$ | async as time" class="ion-text-center">
+          <h1>
+            {{ time }}
+          </h1>
+        </ion-text>
+      
+       <ion-button (click)="startTimer()" *ngIf="true" fill="outline" expand="block"> Start timer </ion-button> 
+      </ion-col>
+    </ion-row>
 
-    <ion-button (click)="startTimer()" *ngIf="true"> Start timer </ion-button>
-
-    <!-- TODO: Style -->
-    <div *ngIf="timers$ | async as timers">
-      <div *ngFor="let timer of timers">
-        <app-timer [timer]="timer"></app-timer>
-      </div>
-    </div>
-  </div>
+    <ion-row>
+      <ion-col *ngIf="timers$ | async as timers">
+        <app-timer *ngFor="let timer of timers" [timer]="timer"></app-timer>
+      </ion-col>
+    </ion-row>
+  </ion-grid>
 </ion-content>
