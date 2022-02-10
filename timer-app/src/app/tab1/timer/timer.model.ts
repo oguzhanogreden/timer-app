@@ -109,10 +109,11 @@ export class Timer {
         case 'start':
           reminder = this.timer$.pipe(
             takeUntil(this._timerStopped),
-            map((t) => Math.floor(t.toMillis() / this.remindEveryMinutes.toMillis())),
-            // If "reminder" changed, let the first value pass so that distinctUntilChanged will not filter `1`
-            filter((severity) => (reminderIndex === 0 ? severity > 0 : true)),
-            distinctUntilChanged(),
+            skip(1),
+            map(timer => timer.toMillis()),
+            map(milliseconds => Math.floor(milliseconds / (60 * 1000))),
+            map(minutes => minutes % this.remindEveryMinutes.minutes),
+            filter(remainder => remainder === 0),
             // If "reminder" changed, _ will be 0 when timerIndex===0, we'd like to pass:
             filter((_, timerIndex) => {
               return reminderIndex === 0 || (reminderIndex > 0 && timerIndex !== 0);
@@ -123,15 +124,14 @@ export class Timer {
           // TODO: DRY this!!!
           reminder = this.timer$.pipe(
             takeUntil(this._timerStopped),
-            map((t) => Math.floor(t.toMillis() / this.remindEveryMinutes.toMillis())),
-            // If "reminder" changed, let the first value pass so that distinctUntilChanged will not filter `1`
-            filter((severity) => (reminderIndex === 0 ? severity > 0 : true)),
-            distinctUntilChanged(),
+            map(timer => timer.toMillis()),
+            map(milliseconds => Math.floor(milliseconds / (60 * 1000))),
+            map(minutes => minutes % this.remindEveryMinutes.minutes),
+            filter(remainder => remainder === 0),
             // If "reminder" changed, _ will be 0 when timerIndex===0, we'd like to pass:
             filter((_, timerIndex) => {
               return reminderIndex === 0 || (reminderIndex > 0 && timerIndex !== 0);
             }),
-            skip(1),
           );
           return reminder;
         default:
