@@ -7,33 +7,54 @@
 
 <ion-content>
   <ion-list>
-    <ion-item lines="none">
+    <ion-item lines="none" *ngIf="onIOsMobileWeb$ | async; else onSupportedPlatform">
       <ion-label class="ion-text-wrap">
-        <ion-text><h1>Let's get you started.</h1></ion-text>
-      </ion-label>
-    </ion-item>
+        <ion-text color="danger">
+          <h1>
+            You're on a platform that doesn't support browser notifications.
+          </h1> 
 
-    <ion-item lines="none">
-      <ion-label class="ion-text-wrap">
-        <ion-text>
-          If you want to explore the app yourself, swipe this away. Otherwise, swipe up!
-        </ion-text>
-      </ion-label>
-    </ion-item>
-
-    <ion-item lines="none">
-      <ion-label class="ion-text-wrap">
-        <ion-text>
-          For this app to work well, there's one important thing.
+          <br>
           
-          You should give us permission to notify you.
+          <h2>
+            Unfortunately, iOS does not support browsers to send notifications to the device.
+            <br>
+            <br>
+            This means you won't be able to use the app effectively on your mobile.
+          </h2>
         </ion-text>
       </ion-label>
     </ion-item>
-    
-    <ion-item button (click)="requestPermissions()">
-      <ion-label>Ask permissions</ion-label>
-    </ion-item>
+
+    <ng-template #onSupportedPlatform>
+      <ion-item lines="none">
+        <ion-label class="ion-text-wrap">
+          <ion-text><h1>Let's get you started.</h1></ion-text>
+        </ion-label>
+      </ion-item>
+
+      <ion-item lines="none">
+        <ion-label class="ion-text-wrap">
+          <ion-text>
+            If you want to explore the app yourself, swipe this away. Otherwise, swipe up!
+          </ion-text>
+        </ion-label>
+      </ion-item>
+
+      <ion-item lines="none">
+        <ion-label class="ion-text-wrap">
+          <ion-text>
+            For this app to work well, there's one important thing.
+            
+            You should give us permission to notify you.
+          </ion-text>
+        </ion-label>
+      </ion-item>
+      
+      <ion-item button (click)="requestPermissions()">
+        <ion-label>Ask permissions</ion-label>
+      </ion-item>
+    </ng-template>
   </ion-list>
   
 </ion-content>
